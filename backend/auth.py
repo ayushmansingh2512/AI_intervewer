@@ -8,6 +8,7 @@ from typing import Optional
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 import requests
+import bcrypt
 
 load_dotenv()
 
@@ -16,30 +17,38 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
-# Password Hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password: str, hashed_password: str):
+# Password Hashing - Use bcrypt directly instead of passlib for better compatibility
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifies a plain password against a hashed password.
     
-    The plain password is truncated to 72 bytes before verification
-    to match the truncation done during hashing, preventing ValueError.
+    Truncates password to 72 bytes to match bcrypt's limit.
     """
-    # Truncate the password to 72 bytes to align with bcrypt's internal limit
-    # This prevents the ValueError: password cannot be longer than 72 bytes
-    truncated_password = plain_password[:72]
-    return pwd_context.verify(truncated_password, hashed_password)
+    # Ensure password is bytes and truncate to 72 bytes
+    password_bytes = plain_password.encode('utf-8')[:72]
+    hashed_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+    
+    try:
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except Exception as e:
+        print(f"Password verification error: {e}")
+        return False
 
-def get_password_hash(password: str):
+def get_password_hash(password: str) -> str:
     """
     Hashes the given password using bcrypt.
     
-    The password is truncated to 72 bytes to satisfy bcrypt's internal limit.
+    Truncates password to 72 bytes to satisfy bcrypt's limit.
     """
-    # Truncate the password to 72 bytes to align with bcrypt's internal limit
-    truncated_password = password[:72]
-    return pwd_context.hash(truncated_password)
+    # Ensure password is bytes and truncate to 72 bytes
+    password_bytes = password.encode('utf-8')[:72]
+    
+    # Generate salt and hash
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    
+    # Return as string for database storage
+    return hashed.decode('utf-8')
 
 # JWT Token Creation
 SECRET_KEY = os.getenv("SECRET_KEY")

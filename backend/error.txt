@@ -1,0 +1,217 @@
+
+/getting-started
+Getting Started
+
+Parameters
+Cancel
+Reset
+No parameters
+
+Request body
+
+application/json
+Edit Value
+Schema
+{
+  "email": "chickusingh2512@gmail.com",
+  "password": "string",
+  "first_name": "string",
+  "last_name": "string"
+}
+Execute
+Clear
+Responses
+Curl
+
+curl -X 'POST' \
+  'http://127.0.0.1:8000/getting-started' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "email": "chickusingh2512@gmail.com",
+  "password": "string",
+  "first_name": "string",
+  "last_name": "string"
+}'
+Request URL
+http://127.0.0.1:8000/getting-started
+Server response
+Code	Details
+500
+Undocumented
+Error: Internal Server Error
+
+Response body
+Download
+Internal Server Error
+Response headers
+ access-control-allow-credentials: true 
+ access-control-allow-headers: * 
+ access-control-allow-methods: PUT,GET,HEAD,POST,DELETE,OPTIONS 
+ access-control-allow-origin: http://127.0.0.1:8000 
+ content-length: 21 
+ content-type: text/plain; charset=utf-8 
+ date: Sun,26 Oct 2025 07:46:41 GMT 
+ server: uvicorn 
+Responses
+Code	Description	Links
+200	
+Successful Response
+
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "access_token": "string",
+  "token_type": "string"
+}
+No links
+422	
+Validation Error
+
+Media type
+
+application/json
+Example Value
+Schema
+{
+  "detail": [
+    {
+      "loc": [
+        "string",
+        0
+      ],
+      "msg": "string",
+      "type": "string"
+    }
+  ]
+}
+(venv) PS C:\Users\91638\Desktop\solvithem\backend> cd ..
+(venv) PS C:\Users\91638\Desktop\solvithem> uvicorn backend.main:app --reload
+>> 
+INFO:     Will watch for changes in these directories: ['C:\\Users\\91638\\Desktop\\solvithem']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [38528] using StatReload
+INFO:     Started server process [11624]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:64458 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64458 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64458 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64458 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54830 - "POST /signup?email=chickusingh2512%40gmail.com HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50618 - "POST /verify-otp HTTP/1.1" 200 OK
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+INFO:     127.0.0.1:63451 - "POST /getting-started HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\fastapi\applications.py", line 1133, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\applications.py", line 113, in __call__        
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__   
+    raise exc
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__   
+    await self.app(scope, receive, _send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\fastapi\routing.py", line 123, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\fastapi\routing.py", line 109, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\fastapi\routing.py", line 389, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\fastapi\routing.py", line 290, in run_endpoint_function  
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\starlette\concurrency.py", line 38, in run_in_threadpool 
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\anyio\to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2485, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 976, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\main.py", line 56, in getting_started
+    crud.create_user(db=db, user=user)
+  File "C:\Users\91638\Desktop\solvithem\backend\crud.py", line 10, in create_user
+    hashed_password = get_password_hash(user.password)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\auth.py", line 42, in get_password_hash
+    return pwd_context.hash(truncated_password)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\context.py", line 2258, in hash
+    return record.hash(secret, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 779, in hash
+    self.checksum = self._calc_checksum(secret)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 591, in _calc_checksum 
+    self._stub_requires_backend()
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 2254, in _stub_requires_backend
+    cls.set_backend()
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 2156, in set_backend    
+    return owner.set_backend(name, dryrun=dryrun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 2163, in set_backend    
+    return cls.set_backend(name, dryrun=dryrun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 2188, in set_backend    
+    cls._set_backend(name, dryrun)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 2311, in _set_backend   
+    super(SubclassBackendMixin, cls)._set_backend(name, dryrun)
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 2224, in _set_backend   
+    ok = loader(**kwds)
+         ^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 626, in _load_backend_mixin
+    return mixin_cls._finalize_backend_mixin(name, dryrun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 421, in _finalize_backend_mixin
+    if detect_wrap_bug(IDENT_2A):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 380, in detect_wrap_bug
+    if verify(secret, bug_hash):
+       ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\utils\handlers.py", line 792, in verify
+    return consteq(self._calc_checksum(secret), chk)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\91638\Desktop\solvithem\backend\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 655, in _calc_checksum 
+    hash = _bcrypt.hashpw(secret, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: password c

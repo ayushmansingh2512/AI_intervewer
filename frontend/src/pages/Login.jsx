@@ -31,7 +31,7 @@ function Login() {
     setLoading(true);// loading status = loading
 
     try {
-      const response = await axios.post("http://localhost:5000/api/login", {
+      const response = await axios.post("http://localhost:8000/login", {
         email,
         password,
       });
@@ -39,8 +39,8 @@ function Login() {
       console.log(response);
 
       //if backend response success
-      if (response.data.success) {
-        localStorage.setItem("email", email); // storing email
+      if (response.data.access_token) {
+        localStorage.setItem("token", response.data.access_token); // storing token
         toast.success(`Welcome back, ${email}`);
         navigate("/dashboard"); //redirect to dashboard
       } else {

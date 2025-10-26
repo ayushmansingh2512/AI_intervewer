@@ -1,30 +1,46 @@
 import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import axios from "axios";
 import "./styles/Theme.css";
 
 function Signup() {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    //validation
     if (!email || !email.includes("@")) {
       toast.error("Please enter a valid email!");
       return;
     }
 
-    // store email in localStorage 
-    localStorage.setItem("email", email);
+    setLoading(true);
+    try {
+      const response = await axios.post("http://localhost:8000/signup", {
+        email,
+      });
 
-    toast.success(
-      <span>
-        OTP sent to <b style={{ color: "#2563eb" }}>{email}</b>
-      </span>
-    );
-
-    navigate("/otp");
+      if (response.status === 200) {
+        localStorage.setItem("email", email);
+        toast.success(
+          <span>
+            OTP sent to <b style={{ color: "#2563eb" }}>{email}</b>
+          </span>
+        );
+        navigate("/otp");
+      }
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.detail) {
+        toast.error(error.response.data.detail);
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
+      console.error("Signup error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,9 +65,10 @@ function Signup() {
 
           <button
             type="submit"
+            disabled={loading}
             className="w-full bg-black text-white py-2 rounded-lg hover-ele transition"
           >
-            Verify Email
+            {loading ? "Verifying..." : "Verify Email"}
           </button>
         </form>
 

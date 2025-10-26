@@ -4,7 +4,6 @@ sqlalchemy
 psycopg2-binary
 fastapi-mail<2.0.0
 python-jose
-passlib
 python-dotenv
 google-auth
 google-auth-oauthlib
