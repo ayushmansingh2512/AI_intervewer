@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, validator
-from typing import Optional
+from typing import Optional, List
 
 class EmailRequest(BaseModel):
     email: EmailStr
@@ -48,3 +48,26 @@ class InterviewRequest(BaseModel):
     position: str
     languages: str
     other: str
+
+class EvaluateRequest(BaseModel):
+    questions: List[str]
+    answers: List[str]
+
+
+class LanguageAnalysis(BaseModel):
+    name: str
+    proficiency: str
+    feedback: str
+
+class IndustryStandards(BaseModel):
+    meeting: List[str]
+    not_meeting: List[str]
+
+class CVAnalysis(BaseModel):
+    overall_score: float
+    overall_feedback: str
+    relevant_points: List[str]
+    irrelevant_points: List[str]
+    languages: List[LanguageAnalysis]
+    industry_standards: IndustryStandards
+    recommendations: List[str]

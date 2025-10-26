@@ -1,39 +1,38 @@
+// Sidebar.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, Plus, FileText } from 'lucide-react';
 
 const Sidebar = () => {
-  const linkStyle = {
-    display: 'block',
-    padding: '1rem',
-    color: '#000',
-    textDecoration: 'none',
-    fontWeight: '300'
-  };
-
-  const activeLinkStyle = {
-    ...linkStyle,
-    fontWeight: '700'
-  };
+  const linkClasses = ({ isActive }) => `
+    flex items-center gap-3 px-4 py-3 text-[#1A1817] no-underline font-light
+    hover:bg-[#F7F5F2] transition-all duration-200 rounded-lg
+    ${isActive ? 'bg-[#F7F5F2] font-normal' : ''}
+  `;
 
   return (
-    <div style={{
-      width: '200px',
-      backgroundColor: '#fff',
-      color: '#000',
-      borderRight: '1px solid #000',
-      height: '100vh'
-    }}>
-      <div style={{ padding: '1rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '300' }}>Solvithem</h2>
+    <div className="h-full bg-white border-r border-[#E5E1DC]">
+      <div className="p-6">
+        <h1 className="text-2xl font-light text-[#1A1817] tracking-tight">
+          Solvithem
+        </h1>
       </div>
-      <nav>
-        <NavLink
-          to="/dashboard"
-          style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}
-        >
-          Dashboard
+      
+      <nav className="px-4 space-y-2">
+        <NavLink to="/dashboard" end className={linkClasses}>
+          <LayoutDashboard size={20} strokeWidth={1.5} />
+          <span>Dashboard</span>
         </NavLink>
-        {/* Add more links here as needed */}
+        
+        <NavLink to="/dashboard/create-interview" className={linkClasses}>
+          <Plus size={20} strokeWidth={1.5} />
+          <span>Create Interview</span>
+        </NavLink>
+        
+        <NavLink to="/dashboard/cv-parser" className={linkClasses}>
+          <FileText size={20} strokeWidth={1.5} />
+          <span>CV Parser</span>
+        </NavLink>
       </nav>
     </div>
   );

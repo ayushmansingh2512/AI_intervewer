@@ -8,7 +8,11 @@ import WelcomeForm from './pages/WelcomeForm';
 import Dashboard from './pages/Dashboard';
 import DashboardLayout from './pages/DashboardLayout';
 import ProtectedRoute from './auth/ProtectedRoute';
+import CreateInterview from './pages/CreateInterview';
+import Interview from './pages/Interview';
+import Results from './pages/Results';
 import './App.css';
+import CVParser from './pages/CVparser';
 
 function App() {
   return (
@@ -33,7 +37,39 @@ function App() {
                 </DashboardLayout>
               }
             />
-            {/* Add other protected routes here */}
+            <Route
+              path="/dashboard/create-interview"
+              element={
+                <DashboardLayout>
+                  <CreateInterview />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/dashboard/interview"
+              element={
+                <DashboardLayout>
+                  <Interview />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/dashboard/results"
+              element={
+                <DashboardLayout>
+                  <Results />
+                </DashboardLayout>
+              }
+            />
+          <Route
+              path="/dashboard/cv-parser"
+                 element={
+                <DashboardLayout>
+                 <CVParser />
+                </DashboardLayout>
+              } 
+            />
+
           </Route>
         </Routes>
       </BrowserRouter>

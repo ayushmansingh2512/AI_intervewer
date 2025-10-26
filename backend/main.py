@@ -5,15 +5,23 @@ from sqlalchemy.orm import Session
 import random
 import string
 from datetime import datetime, timedelta
-
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+from fastapi import UploadFile, File
+import PyPDF2
+import docx
+import io
 from backend import crud, model, schemas, auth
 from backend.database import SessionLocal, engine
+
+load_dotenv()
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Add your frontend URL here
+    allow_origins=["*"],  # Add your frontend URL here
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -165,6 +173,67 @@ def auth_google_callback(code: str, db: Session = Depends(get_db)):
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.post("/generate-questions")
+async def generate_questions(request: schemas.InterviewRequest):
+    if not os.getenv("GEMINI_API_KEY"):
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+
+    model = genai.GenerativeModel('gemini-2.5-flash')
+
+    prompt = f"""
+    Generate 5 interview questions for a {request.role} candidate applying for a {request.position} position.
+    The candidate has experience with the following languages and tools: {request.languages}.
+    Other relevant information: {request.other}.
+
+    The questions should be of varying difficulty, appropriate for a {request.role} level.
+    Return the questions as a JSON array of strings.
+    if its smaller postion ask simple techinal question like what this function if its for higher post ask question from system design and scalabilty  
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        # The response text might be in a markdown format, so we need to clean it
+        import json
+        # A common way to get the json is to find the first ```json and the last ```
+        text_response = response.text
+        json_part = text_response[text_response.find('```json\n') + 7 : text_response.rfind('\n```')]
+        questions = json.loads(json_part)
+        return questions
+    except Exception as e:
+        print(f"Error generating questions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate questions")
+
+@app.post("/evaluate-answers")
+async def evaluate_answers(request: schemas.EvaluateRequest):
+    if not os.getenv("GEMINI_API_KEY"):
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+
+    model = genai.GenerativeModel('gemini-2.5-flash')
+
+    prompt = f"""
+    Evaluate the following interview answers based on the questions.
+    Provide a score from 1 to 10 for each answer, where 1 is poor and 10 is excellent.
+    Also provide a brief feedback for each answer.
+    Return the result as a JSON array of objects, where each object has "score" and "feedback" properties.
+
+    Questions:
+    {request.questions}
+
+    Answers:
+    {request.answers}
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        import json
+        text_response = response.text
+        json_part = text_response[text_response.find('```json\n') + 7 : text_response.rfind('\n```')]
+        evaluation = json.loads(json_part)
+        return evaluation
+    except Exception as e:
+        print(f"Error evaluating answers: {e}")
+        raise HTTPException(status_code=500, detail="Failed to evaluate answers")
+
 # Optional: Cleanup expired OTPs periodically
 @app.on_event("startup")
 async def startup_event():
@@ -192,3 +261,108 @@ async def startup_event():
                 del verified_emails[email]
     
     asyncio.create_task(cleanup_expired_data())
+
+
+def extract_text_from_pdf(file_content):
+    """Extract text from PDF file"""
+    try:
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        return text
+    except Exception as e:
+        print(f"Error extracting PDF text: {e}")
+        return None
+
+def extract_text_from_docx(file_content):
+    """Extract text from DOCX file"""
+    try:
+        doc = docx.Document(io.BytesIO(file_content))
+        text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        return text
+    except Exception as e:
+        print(f"Error extracting DOCX text: {e}")
+        return None
+
+@app.post("/analyze-cv")
+async def analyze_cv(cv: UploadFile = File(...)):
+    """
+    Analyze uploaded CV and provide feedback
+    """
+    if not os.getenv("GEMINI_API_KEY"):
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+
+    # Check file type
+    if cv.content_type not in ["application/pdf", "application/msword", 
+                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+        raise HTTPException(status_code=400, detail="Only PDF and Word documents are supported")
+
+    # Check file size (10MB limit)
+    file_content = await cv.read()
+    if len(file_content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+
+    # Extract text based on file type
+    cv_text = None
+    if cv.content_type == "application/pdf":
+        cv_text = extract_text_from_pdf(file_content)
+    elif cv.content_type in ["application/msword", 
+                              "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+        cv_text = extract_text_from_docx(file_content)
+
+    if not cv_text:
+        raise HTTPException(status_code=400, detail="Could not extract text from CV")
+
+    # Analyze CV using Gemini
+    model = genai.GenerativeModel('gemini-2.5-flash')
+
+    prompt = f"""
+    Analyze the following CV and provide detailed feedback. Return your analysis as a JSON object with the following structure:
+
+    {{
+        "overall_score": <float between 1-10>,
+        "overall_feedback": "<brief overall assessment>",
+        "relevant_points": ["<point 1>", "<point 2>", ...],
+        "irrelevant_points": ["<point 1>", "<point 2>", ...],
+        "languages": [
+            {{
+                "name": "<language/technology name>",
+                "proficiency": "<Beginner/Intermediate/Advanced/Expert>",
+                "feedback": "<specific feedback>"
+            }}
+        ],
+        "industry_standards": {{
+            "meeting": ["<standard 1>", "<standard 2>", ...],
+            "not_meeting": ["<standard 1>", "<standard 2>", ...]
+        }},
+        "recommendations": ["<recommendation 1>", "<recommendation 2>", ...]
+    }}
+
+    Focus on:
+    1. Relevant vs irrelevant information for tech roles
+    2. Language/technology proficiency levels
+    3. Industry-standard formatting and content
+    4. What should be added, removed, or improved
+    5. Specific, actionable recommendations
+
+    CV Content:
+    {cv_text}
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        import json
+        text_response = response.text
+        
+        # Extract JSON from markdown if present
+        if '```json' in text_response:
+            json_part = text_response[text_response.find('```json\n') + 7 : text_response.rfind('\n```')]
+        else:
+            json_part = text_response
+        
+        analysis = json.loads(json_part)
+        return analysis
+    except Exception as e:
+        print(f"Error analyzing CV: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze CV: {str(e)}")
