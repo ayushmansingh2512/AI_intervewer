@@ -48,7 +48,9 @@ class InterviewRequest(BaseModel):
     position: str
     languages: str
     other: str
-
+    questionType: str = "mixed"
+    numberOfQuestions: int = 5
+    
 class EvaluateRequest(BaseModel):
     questions: List[str]
     answers: List[str]

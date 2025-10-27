@@ -1,4 +1,3 @@
-
 // CreateInterview.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +11,8 @@ const CreateInterview = () => {
     position: 'Product Designer',
     languages: '',
     other: '',
+    questionType: 'mixed',
+    numberOfQuestions: 5,
   });
   const [loading, setLoading] = useState(false);
 
@@ -121,6 +122,48 @@ const CreateInterview = () => {
                   placeholder="Any additional information about the role or candidate..."
                   className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] placeholder-[#9B9791] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200 resize-none"
                 />
+              </div>
+
+              {/* Question Type Selection */}
+              <div className="group">
+                <label className="block text-sm font-light text-[#1A1817] mb-2 tracking-wide">
+                  Question Type
+                </label>
+                <select 
+                  name="questionType" 
+                  value={formData.questionType} 
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%231A1817' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 1rem center'
+                  }}
+                >
+                  <option value="mixed">Mixed (All Types)</option>
+                  <option value="coding">Coding Questions</option>
+                  <option value="dsa">Data Structures & Algorithms</option>
+                  <option value="system-design">System Design</option>
+                  <option value="behavioral">Behavioral Questions</option>
+                  <option value="theoretical">Theoretical/Conceptual</option>
+                </select>
+              </div>
+
+              {/* Number of Questions */}
+              <div className="group">
+                <label className="block text-sm font-light text-[#1A1817] mb-2 tracking-wide">
+                  Number of Questions
+                </label>
+                <input
+                  type="number"
+                  name="numberOfQuestions"
+                  value={formData.numberOfQuestions}
+                  onChange={handleChange}
+                  min="3"
+                  max="15"
+                  className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200"
+                />
+                <p className="mt-1.5 text-xs text-[#9B9791] font-light">Choose between 3 and 15 questions</p>
               </div>
             </div>
           </div>

@@ -181,13 +181,21 @@ async def generate_questions(request: schemas.InterviewRequest):
     model = genai.GenerativeModel('gemini-2.5-flash')
 
     prompt = f"""
-    Generate 5 interview questions for a {request.role} candidate applying for a {request.position} position.
-    The candidate has experience with the following languages and tools: {request.languages}.
-    Other relevant information: {request.other}.
-
-    The questions should be of varying difficulty, appropriate for a {request.role} level.
+    Generate {request.numberOfQuestions} interview questions for a {request.role} candidate applying for a {request.position} position.
+    
+    Question Type Focus: {request.questionType}
+    - If 'coding': Focus on practical coding problems and implementation questions
+    - If 'dsa': Focus on data structures and algorithms
+    - If 'system-design': Focus on architecture, scalability, and design patterns
+    - If 'behavioral': Focus on past experiences, teamwork, and soft skills
+    - If 'theoretical': Focus on concepts, definitions, and theoretical knowledge
+    - If 'mixed': Include a variety of all question types
+    
+    The candidate has experience with: {request.languages}.
+    Additional context: {request.other}.
+    
+    The questions should be appropriate for a {request.role} level.
     Return the questions as a JSON array of strings.
-    if its smaller postion ask simple techinal question like what this function if its for higher post ask question from system design and scalabilty  
     """
 
     try:
@@ -261,6 +269,8 @@ async def startup_event():
                 del verified_emails[email]
     
     asyncio.create_task(cleanup_expired_data())
+
+
 
 
 def extract_text_from_pdf(file_content):
