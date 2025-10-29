@@ -1,15 +1,17 @@
-// CVParser.jsx
-import React, { useState } from 'react';
+ import React, { useState } from 'react';
 import axios from 'axios';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
-import { Upload, FileText, CheckCircle, AlertCircle, TrendingUp, Code, Award } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
+import { Upload, FileText, CheckCircle, AlertCircle, TrendingUp, Code, Award, Download } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 const CVParser = () => {
   const [file, setFile] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -70,11 +72,192 @@ const CVParser = () => {
     }
   };
 
+  const generatePDF = async () => {
+    if (!analysis) {
+      toast.error('No analysis data available');
+      return;
+    }
+
+    setDownloadingPDF(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+      const margin = 20;
+      const contentWidth = pageWidth - 2 * margin;
+
+      const addText = (text, fontSize = 12, isBold = false, color = [26, 24, 23]) => {
+        doc.setFontSize(fontSize);
+        doc.setTextColor(color[0], color[1], color[2]);
+        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+        const lines = doc.splitTextToSize(text, contentWidth);
+        doc.text(lines, margin, yPosition);
+        yPosition += lines.length * (fontSize * 0.4) + 2;
+      };
+
+      const addSection = (title) => {
+        if (yPosition > pageHeight - 30) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        addText(title, 16, true, [212, 165, 116]);
+        yPosition += 2;
+      };
+
+      const addSeparator = () => {
+        doc.setDrawColor(229, 225, 220);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 5;
+      };
+
+      const addNewPage = () => {
+        doc.addPage();
+        yPosition = 20;
+      };
+
+      const addImage = async (elementId, maxHeight = 80) => {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        try {
+          const canvas = await html2canvas(element, {
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            backgroundColor: '#FFFFFF',
+          });
+
+          if (yPosition + maxHeight > pageHeight - 20) {
+            addNewPage();
+          }
+
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = contentWidth;
+          const imgHeight = (canvas.height / canvas.width) * imgWidth;
+          const finalHeight = Math.min(imgHeight, maxHeight);
+          doc.addImage(imgData, 'PNG', margin, yPosition, imgWidth, finalHeight);
+          yPosition += finalHeight + 5;
+        } catch (error) {
+          console.error('Error capturing chart:', error);
+        }
+      };
+
+      // Header
+      doc.setFontSize(24);
+      doc.setTextColor(26, 24, 23);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CV Analysis Report', margin, yPosition);
+      yPosition += 15;
+
+      addText(new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }), 12, false, [107, 102, 98]);
+      addSeparator();
+
+      // Overall Score
+      addSection('Overall Assessment');
+      addText(`Overall Score: ${analysis.overall_score}/10`, 14, true);
+      addText(analysis.overall_feedback, 11, false, [107, 102, 98]);
+      yPosition += 5;
+
+      // Add Radar Chart
+      addSection('Performance Metrics');
+      await addImage('cv-radar-chart', 100);
+
+      // Relevant Points
+      addSection('Relevant Points');
+      analysis.relevant_points.forEach((point) => {
+        if (yPosition > pageHeight - 30) {
+          addNewPage();
+        }
+        addText(`✓ ${point}`, 10, false, [16, 185, 129]);
+      });
+      yPosition += 5;
+
+      // Irrelevant Points
+      addSection('Points to Remove');
+      analysis.irrelevant_points.forEach((point) => {
+        if (yPosition > pageHeight - 30) {
+          addNewPage();
+        }
+        addText(`✗ ${point}`, 10, false, [239, 68, 68]);
+      });
+      yPosition += 5;
+
+      // Languages & Technologies with Chart
+      addSection('Languages & Technologies');
+      await addImage('cv-lang-chart', 100);
+
+      if (yPosition > pageHeight - 50) {
+        addNewPage();
+      }
+
+      analysis.languages.forEach((lang) => {
+        if (yPosition > pageHeight - 30) {
+          addNewPage();
+        }
+        addText(`${lang.name} - ${lang.proficiency}`, 10, true);
+        addText(lang.feedback, 9, false, [107, 102, 98]);
+        yPosition += 3;
+      });
+      yPosition += 5;
+
+      // Industry Standards
+      addSection('Industry Standards Compliance');
+
+      if (yPosition > pageHeight - 40) {
+        addNewPage();
+      }
+      
+      addText('Meeting Standards:', 11, true, [16, 185, 129]);
+      analysis.industry_standards.meeting.forEach((item) => {
+        if (yPosition > pageHeight - 30) {
+          addNewPage();
+        }
+        addText(`• ${item}`, 10, false, [107, 102, 98]);
+      });
+      yPosition += 3;
+
+      addText('Needs Improvement:', 11, true, [245, 158, 11]);
+      analysis.industry_standards.not_meeting.forEach((item) => {
+        if (yPosition > pageHeight - 30) {
+          addNewPage();
+        }
+        addText(`• ${item}`, 10, false, [107, 102, 98]);
+      });
+      yPosition += 5;
+
+      // Recommendations
+      if (yPosition > pageHeight - 30) {
+        addNewPage();
+      }
+      addSection('Recommendations');
+      analysis.recommendations.forEach((rec, index) => {
+        if (yPosition > pageHeight - 30) {
+          addNewPage();
+        }
+        addText(`${index + 1}. ${rec}`, 10, false, [107, 102, 98]);
+        yPosition += 3;
+      });
+
+      doc.save('cv-analysis-report.pdf');
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   const renderScore = (score) => {
     const percentage = (score / 10) * 100;
-    let color = '#EF4444'; // red
-    if (percentage >= 70) color = '#10B981'; // green
-    else if (percentage >= 50) color = '#F59E0B'; // orange
+    let color = '#EF4444';
+    if (percentage >= 70) color = '#10B981';
+    else if (percentage >= 50) color = '#F59E0B';
 
     return (
       <div className="flex items-center gap-3">
@@ -91,7 +274,6 @@ const CVParser = () => {
     );
   };
 
-  // Prepare chart data for languages
   const getLanguageChartData = () => {
     if (!analysis) return [];
     
@@ -108,7 +290,6 @@ const CVParser = () => {
     }));
   };
 
-  // Prepare radar chart data for overall analysis
   const getRadarChartData = () => {
     if (!analysis) return [];
 
@@ -138,13 +319,25 @@ const CVParser = () => {
   return (
     <div className="min-h-screen bg-[#F7F5F2] p-6">
       <div className="max-w-5xl mx-auto">
-        <div className="mb-12">
-          <h1 className="text-4xl font-light text-[#1A1817] mb-3 tracking-tight">
-            CV Parser & Analyzer
-          </h1>
-          <p className="text-[#6B6662] font-light">
-            Upload your CV to receive detailed feedback on relevance, skills, and industry standards
-          </p>
+        <div className="mb-12 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-light text-[#1A1817] mb-3 tracking-tight">
+              CV Parser & Analyzer
+            </h1>
+            <p className="text-[#6B6662] font-light">
+              Upload your CV to receive detailed feedback on relevance, skills, and industry standards
+            </p>
+          </div>
+          {analysis && (
+            <button
+              onClick={generatePDF}
+              disabled={downloadingPDF}
+              className="flex items-center gap-2 px-6 py-3 bg-[#D4A574] text-white rounded-lg font-light hover:bg-[#C0956B] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={20} />
+              {downloadingPDF ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+          )}
         </div>
 
         {/* Upload Section */}
@@ -237,35 +430,37 @@ const CVParser = () => {
             {/* Performance Radar Chart */}
             <div className="bg-white rounded-lg p-8 shadow-sm border border-[#E5E1DC]">
               <h3 className="text-xl font-light text-[#1A1817] mb-6">Performance Overview</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={getRadarChartData()}>
-                  <PolarGrid stroke="#E5E1DC" />
-                  <PolarAngleAxis 
-                    dataKey="category" 
-                    tick={{ fill: '#6B6662', fontWeight: 300, fontSize: 12 }}
-                  />
-                  <PolarRadiusAxis 
-                    angle={90} 
-                    domain={[0, 10]} 
-                    tick={{ fill: '#6B6662', fontWeight: 300 }}
-                  />
-                  <Radar 
-                    name="Score" 
-                    dataKey="score" 
-                    stroke="#D4A574" 
-                    fill="#D4A574" 
-                    fillOpacity={0.3}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#FFFFFF', 
-                      border: '1px solid #E5E1DC',
-                      borderRadius: '8px',
-                      fontWeight: 300
-                    }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
+              <div id="cv-radar-chart">
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={getRadarChartData()}>
+                    <PolarGrid stroke="#E5E1DC" />
+                    <PolarAngleAxis 
+                      dataKey="category" 
+                      tick={{ fill: '#6B6662', fontWeight: 300, fontSize: 12 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 10]} 
+                      tick={{ fill: '#6B6662', fontWeight: 300 }}
+                    />
+                    <Radar 
+                      name="Score" 
+                      dataKey="score" 
+                      stroke="#D4A574" 
+                      fill="#D4A574" 
+                      fillOpacity={0.3}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#FFFFFF', 
+                        border: '1px solid #E5E1DC',
+                        borderRadius: '8px',
+                        fontWeight: 300
+                      }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Relevant Points */}
@@ -308,7 +503,7 @@ const CVParser = () => {
               </div>
               
               {/* Chart */}
-              <div className="mb-8">
+              <div className="mb-8" id="cv-lang-chart">
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={getLanguageChartData()} layout="horizontal">
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E1DC" />

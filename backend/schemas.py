@@ -73,3 +73,22 @@ class CVAnalysis(BaseModel):
     languages: List[LanguageAnalysis]
     industry_standards: IndustryStandards
     recommendations: List[str]
+
+class VoiceAnswerRequest(BaseModel):
+    question: str
+
+class VoiceAnswerResponse(BaseModel):
+    transcribed_text: str
+    score: float
+    feedback: str
+    follow_up_question: Optional[str] = None
+
+class VoiceInterviewEvaluationRequest(BaseModel):
+    evaluations: List[VoiceAnswerResponse]
+    questions: List[str]
+
+class VoiceInterviewEvaluationResponse(BaseModel):
+    overall_score: float
+    overall_feedback: str
+    question_scores: List[dict] # e.g., [{"name": "Q1", "score": 7.5}]
+    recommendations: List[str]

@@ -1,7 +1,7 @@
 // Sidebar.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Plus, FileText } from 'lucide-react';
+import { LayoutDashboard, Plus, FileText, Voicemail, VoicemailIcon, Mic } from 'lucide-react';
 
 const Sidebar = () => {
   const linkClasses = ({ isActive }) => `
@@ -11,7 +11,7 @@ const Sidebar = () => {
   `;
 
   return (
-    <div className="h-full bg-white border-r border-[#E5E1DC]">
+    <div className="h-[100vh] bg- border-r border-[#E5E1DC]">
       <div className="p-6">
         <h1 className="text-2xl font-light text-[#1A1817] tracking-tight">
           Solvithem
@@ -32,6 +32,11 @@ const Sidebar = () => {
         <NavLink to="/dashboard/cv-parser" className={linkClasses}>
           <FileText size={20} strokeWidth={1.5} />
           <span>CV Parser</span>
+        </NavLink>
+        
+        <NavLink to="/dashboard/voice-interview" className={linkClasses}>
+          <Mic size={20} strokeWidth={1.5} />
+          <span>Voice Interview</span>
         </NavLink>
       </nav>
     </div>

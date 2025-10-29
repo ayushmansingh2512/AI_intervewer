@@ -13,6 +13,9 @@ import Interview from './pages/Interview';
 import Results from './pages/Results';
 import './App.css';
 import CVParser from './pages/CVparser';
+import CreateVoiceInterview from './pages/CreateVoiceInterview';
+import VoiceInterview from './pages/VoiceInterview';
+import VoiceInterviewResults from './pages/VoiceInterviewResults';
 
 function App() {
   return (
@@ -61,15 +64,38 @@ function App() {
                 </DashboardLayout>
               }
             />
-          <Route
-              path="/dashboard/cv-parser"
-                 element={
-                <DashboardLayout>
-                 <CVParser />
-                </DashboardLayout>
-              } 
-            />
-
+                      <Route
+                        path="/dashboard/cv-parser"
+                           element={
+                          <DashboardLayout>
+                           <CVParser />
+                          </DashboardLayout>
+                        } 
+                      />
+                      <Route
+                        path="/dashboard/voice-interview"
+                        element={
+                          <DashboardLayout>
+                            <CreateVoiceInterview />
+                          </DashboardLayout>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/voice-interview/start"
+                        element={
+                          <DashboardLayout>
+                            <VoiceInterview />
+                          </DashboardLayout>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/voice-interview/results"
+                        element={
+                          <DashboardLayout>
+                            <VoiceInterviewResults />
+                          </DashboardLayout>
+                        }
+                      />
           </Route>
         </Routes>
       </BrowserRouter>
