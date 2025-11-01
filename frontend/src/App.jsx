@@ -16,6 +16,7 @@ import CVParser from './pages/CVparser';
 import CreateVoiceInterview from './pages/CreateVoiceInterview';
 import VoiceInterview from './pages/VoiceInterview';
 import VoiceInterviewResults from './pages/VoiceInterviewResults';
+ 
 
 function App() {
   return (
@@ -96,6 +97,7 @@ function App() {
                           </DashboardLayout>
                         }
                       />
+  
           </Route>
         </Routes>
       </BrowserRouter>

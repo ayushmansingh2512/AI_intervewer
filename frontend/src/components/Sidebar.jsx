@@ -1,7 +1,7 @@
 // Sidebar.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Plus, FileText, Voicemail, VoicemailIcon, Mic } from 'lucide-react';
+import { LayoutDashboard, Plus, FileText, Voicemail, VoicemailIcon, Mic, FileSignature } from 'lucide-react';
 
 const Sidebar = () => {
   const linkClasses = ({ isActive }) => `
@@ -37,6 +37,10 @@ const Sidebar = () => {
         <NavLink to="/dashboard/voice-interview" className={linkClasses}>
           <Mic size={20} strokeWidth={1.5} />
           <span>Voice Interview</span>
+        </NavLink>
+        <NavLink to="/dashboard/cv-maker" className={linkClasses}>
+          <FileSignature size={20} strokeWidth={1.5} />
+          <span>CV Maker</span>
         </NavLink>
       </nav>
     </div>

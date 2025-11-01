@@ -12,7 +12,7 @@ const CreateInterview = () => {
     languages: '',
     other: '',
     questionType: 'mixed',
-    numberOfQuestions: 5,
+    numberOfQuestions: 5, 
   });
   const [loading, setLoading] = useState(false);
 
@@ -146,6 +146,7 @@ const CreateInterview = () => {
                   <option value="system-design">System Design</option>
                   <option value="behavioral">Behavioral Questions</option>
                   <option value="theoretical">Theoretical/Conceptual</option>
+                    <option value="reasoning">quantitative aptitude and logical reasoning</option>
                 </select>
               </div>
 

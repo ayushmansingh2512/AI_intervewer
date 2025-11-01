@@ -1,10 +1,10 @@
- import React, { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { Upload, FileText, CheckCircle, AlertCircle, TrendingUp, Code, Award, Download } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { Treemap, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 const CVParser = () => {
   const [file, setFile] = useState(null);
@@ -284,10 +284,13 @@ const CVParser = () => {
       'Expert': 10
     };
 
-    return analysis.languages.map(lang => ({
-      name: lang.name,
-      proficiency: proficiencyMap[lang.proficiency] || 0
-    }));
+    return {
+      name: "Languages",
+      children: analysis.languages.map(lang => ({
+        name: lang.name,
+        value: proficiencyMap[lang.proficiency] || 0
+      }))
+    };
   };
 
   const getRadarChartData = () => {
@@ -502,32 +505,27 @@ const CVParser = () => {
                 <h2 className="text-2xl font-light text-[#1A1817]">Languages & Technologies</h2>
               </div>
               
-              {/* Chart */}
+              {/* Treemap Chart */}
               <div className="mb-8" id="cv-lang-chart">
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={getLanguageChartData()} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E1DC" />
-                    <XAxis 
-                      type="number" 
-                      domain={[0, 10]} 
-                      tick={{ fill: '#6B6662', fontWeight: 300 }}
-                    />
-                    <YAxis 
-                      type="category" 
-                      dataKey="name" 
-                      tick={{ fill: '#6B6662', fontWeight: 300 }}
-                      width={100}
-                    />
+                <ResponsiveContainer width="100%" height={300}>
+                  <Treemap
+                    data={[getLanguageChartData()]}
+                    dataKey="value"
+                    fill="#D4A574"
+                    stroke="#fff"
+                    
+                  >
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#FFFFFF', 
                         border: '1px solid #E5E1DC',
                         borderRadius: '8px',
-                        fontWeight: 300
+                        fontWeight: 100
                       }}
+                      formatter={(value) => [`${value.toFixed(1)}/10`, 'Proficiency']}
+                      cursor={{ fill: 'rgba(212, 165, 116, 0.1)' }}
                     />
-                    <Bar dataKey="proficiency" fill="#1A1817" radius={[0, 4, 4, 0]} />
-                  </BarChart>
+                  </Treemap>
                 </ResponsiveContainer>
               </div>
 
