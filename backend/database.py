@@ -27,7 +27,7 @@ if "sslmode" not in SQLALCHEMY_DATABASE_URL:
 if "-pooler" in SQLALCHEMY_DATABASE_URL:
     print("Using pooled connection. If timeouts persist, switch to direct connection.")
     # Uncomment next line to use direct connection:
-    # SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("-pooler", "")
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("-pooler", "")
 
 # Create engine with aggressive timeout and retry settings
 engine = create_engine(

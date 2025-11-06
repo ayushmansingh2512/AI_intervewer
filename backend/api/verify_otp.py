@@ -1,15 +1,14 @@
-
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
+from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
-from backend import schemas
+from backend import crud, schemas
+from backend.database import get_db
 from backend.api.signup import otp_storage
 
-# In-memory storage for verified emails
-verified_emails = {}
 OTP_EXPIRY_MINUTES = 5
 
-def verify_otp(otp_data: schemas.OTPVerify):
+def verify_otp(otp_data: schemas.OTPVerify, db: Session = Depends(get_db)):
     stored_data = otp_storage.get(otp_data.email)
     if not stored_data:
         raise HTTPException(status_code=400, detail="No OTP found for this email")
@@ -22,7 +21,7 @@ def verify_otp(otp_data: schemas.OTPVerify):
     if stored_data["otp"] != otp_data.otp:
         raise HTTPException(status_code=400, detail="Invalid OTP")
     
-    verified_emails[otp_data.email] = datetime.utcnow()
+    crud.verify_user(db, email=otp_data.email)
     del otp_storage[otp_data.email]
     
     return {"message": "OTP verified successfully"}

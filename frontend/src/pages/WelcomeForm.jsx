@@ -56,6 +56,7 @@ function WelcomeForm() {
 
       if (response.data.access_token) {
         localStorage.setItem("token", response.data.access_token);
+        localStorage.setItem("first_name", formData.first_name);
         toast.success("Welcome aboard!");
         navigate("/dashboard");
       }

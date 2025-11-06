@@ -274,6 +274,8 @@ const CVParser = () => {
     );
   };
 
+  const colors = ['#D4A574', '#A8D5BA', '#FFB4A2', '#B4A7D6', '#FFD6BA', '#C4B5FD', '#F9A8D4', '#A0E4CB'];
+
   const getLanguageChartData = () => {
     if (!analysis) return [];
     
@@ -286,9 +288,10 @@ const CVParser = () => {
 
     return {
       name: "Languages",
-      children: analysis.languages.map(lang => ({
+      children: analysis.languages.map((lang, idx) => ({
         name: lang.name,
-        value: proficiencyMap[lang.proficiency] || 0
+        value: proficiencyMap[lang.proficiency] || 0,
+        fill: colors[idx % colors.length]
       }))
     };
   };
@@ -317,6 +320,26 @@ const CVParser = () => {
         }, 0) / analysis.languages.length
       }
     ];
+  };
+
+  const CustomTreemapContent = (props) => {
+    const { x, y, width, height, name, fill } = props;
+    return (
+      <g>
+        <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" />
+        <text 
+          x={x + width / 2} 
+          y={y + height / 2} 
+          textAnchor="middle" 
+          dominantBaseline="middle"
+          fill="#FFFFFF"
+          fontSize={12}
+          fontWeight={300}
+        >
+          {name}
+        </text>
+      </g>
+    );
   };
 
   return (
@@ -511,16 +534,16 @@ const CVParser = () => {
                   <Treemap
                     data={[getLanguageChartData()]}
                     dataKey="value"
-                    fill="#D4A574"
                     stroke="#fff"
-                    
+                    fill="#D4A574"
+                    content={<CustomTreemapContent />}
                   >
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#FFFFFF', 
                         border: '1px solid #E5E1DC',
                         borderRadius: '8px',
-                        fontWeight: 100
+                        fontWeight: 300
                       }}
                       formatter={(value) => [`${value.toFixed(1)}/10`, 'Proficiency']}
                       cursor={{ fill: 'rgba(212, 165, 116, 0.1)' }}

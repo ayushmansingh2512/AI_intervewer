@@ -29,10 +29,10 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/otp" element={<Otpverification />} />
-          <Route path="/welcome" element={<WelcomeForm />} />
-
+          <Route path="/welcome" element={<WelcomeForm />} /> 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
+          
             <Route
               path="/dashboard"
               element={

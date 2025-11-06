@@ -23,13 +23,17 @@ async def generate_questions(request: schemas.InterviewRequest):
     - If 'system-design': Focus on architecture, scalability, and design patterns
     - If 'behavioral': Focus on past experiences, teamwork, and soft skills
     - If 'theoretical': Focus on concepts, definitions, and theoretical knowledge
+    - If 'quantitative-logical': Focus on general mathematical, numerical, analytical, and logical reasoning problems, not specific to the role or position.
     - If 'mixed': Include a variety of all question types
+    
+    For 'quantitative-logical' question type, generate Multiple Choice Questions (MCQ).
+    Each MCQ should have 4 options and indicate the correct answer.
     
     The candidate has experience with: {request.languages}.
     Additional context: {request.other}.
     
-    The questions should be appropriate for a {request.role} level.
-    Return the questions as a JSON array of strings.
+    The questions should be appropriate for a {request.role} level except for quantitative-logical.
+    Return the questions as a JSON array of objects. Each object should have 'question', 'options' (an array of strings), and 'answer' (the correct option string) fields.
     """
 
     try:

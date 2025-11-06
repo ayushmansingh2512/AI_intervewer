@@ -3,7 +3,6 @@ import asyncio
 from datetime import datetime, timedelta
 
 from backend.api.signup import otp_storage, OTP_EXPIRY_MINUTES
-from backend.api.verify_otp import verified_emails
 
 async def startup_cleanup():
     """Cleanup expired OTPs periodically"""
@@ -20,13 +19,5 @@ async def startup_cleanup():
             ]
             for email in expired_otps:
                 del otp_storage[email]
-            
-            # Clean expired verifications
-            expired_verifications = [
-                email for email, timestamp in verified_emails.items()
-                if current_time - timestamp > timedelta(minutes=30)
-            ]
-            for email in expired_verifications:
-                del verified_emails[email]
     
     asyncio.create_task(cleanup_expired_data())

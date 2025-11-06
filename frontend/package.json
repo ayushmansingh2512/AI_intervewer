@@ -24,7 +24,8 @@
     "react-router": "^7.9.4",
     "react-router-dom": "^7.9.4",
     "recharts": "^3.3.0",
-    "tailwindcss": "^4.1.14"
+    "tailwindcss": "^4.1.14",
+    "lottie-react": "^2.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

@@ -9,4 +9,5 @@ class User(Base):
     hashed_password = Column(String)
     first_name = Column(String)
     last_name = Column(String)
+    is_verified = Column(Boolean, default=False)
     is_google_user = Column(Boolean, default=False)

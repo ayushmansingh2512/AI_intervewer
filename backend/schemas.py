@@ -1,26 +1,26 @@
 from pydantic import BaseModel, EmailStr, validator
-from typing import Optional, List
+from typing import Optional, List, Union
 
 class EmailRequest(BaseModel):
     email: EmailStr
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
-    first_name: str
-    last_name: str
-    
-    @validator('password')
-    def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
-        return v
-    
-    @validator('first_name', 'last_name')
-    def validate_names(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Name cannot be empty')
-        return v.strip()
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+class User(BaseModel):
+    id: int
+    email: EmailStr
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    is_verified: bool
+    is_google_user: bool
+
+    class Config:
+        orm_mode = True
+
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -52,7 +52,7 @@ class InterviewRequest(BaseModel):
     numberOfQuestions: int = 5
     
 class EvaluateRequest(BaseModel):
-    questions: List[str]
+    questions: List[Union[str, dict]]
     answers: List[str]
 
 
@@ -85,7 +85,7 @@ class VoiceAnswerResponse(BaseModel):
 
 class VoiceInterviewEvaluationRequest(BaseModel):
     evaluations: List[VoiceAnswerResponse]
-    questions: List[str]
+    questions: List[Union[str, dict]]
 
 class VoiceInterviewEvaluationResponse(BaseModel):
     overall_score: float

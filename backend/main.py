@@ -19,6 +19,7 @@ from backend.api.process_voice_answer import process_voice_answer
 from backend.api.evaluate_voice_interview import evaluate_voice_interview
 from backend.api.analyze_cv import analyze_cv
 from backend.api.startup_cleanup import startup_cleanup
+from backend.api import users as users_router
 
 load_dotenv()
 app = FastAPI()
@@ -36,14 +37,24 @@ app.add_middleware(
 )
 
 # Initialize database tables on startup
+from sqlalchemy import text
+
 @app.on_event("startup")
 async def startup_db():
-    try:
-        model.Base.metadata.create_all(bind=engine)
-    except Exception as e:
-        print(f"Warning: Could not create tables: {e}")
+    with engine.connect() as con:
+        try:
+            con.execute(text("DROP TABLE users CASCADE"))
+            con.execute(text("DROP TABLE user_profiles CASCADE"))
+            con.execute(text("DROP TABLE mcq_interviews CASCADE"))
+        except Exception as e:
+            print(f"Warning: Could not drop tables: {e}")
+        con.commit()
+    model.Base.metadata.create_all(bind=engine)
 
 app.on_event("startup")(startup_cleanup)
+
+# Include the new users router
+app.include_router(users_router.router, prefix="/users", tags=["users"])
 
 # <------------------- AUTH ENDPOINTS ------------------->
 

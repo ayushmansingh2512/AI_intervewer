@@ -6,7 +6,7 @@ const DashboardLayout = ({ children }) => {
   return (
     <div style={{ display: 'flex' }}>
       <Sidebar />
-      <main style={{ flexGrow: 1, backgroundColor: '#fff' }}>
+      <main style={{ flexGrow: 1, backgroundColor: '#FAF9F5' }}>
         <Navbar />
         <div style={{ padding: '1rem' }}>{children}</div>
       </main>

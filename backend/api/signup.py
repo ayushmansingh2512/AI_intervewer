@@ -16,6 +16,10 @@ async def signup(email_data: schemas.EmailRequest, db: Session = Depends(get_db)
     db_user = crud.get_user_by_email(db, email=email_data.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Create user with just email
+    user = schemas.UserCreate(email=email_data.email)
+    crud.create_user(db=db, user=user)
     
     otp = ''.join(random.choices(string.digits, k=6))
     otp_storage[email_data.email] = {

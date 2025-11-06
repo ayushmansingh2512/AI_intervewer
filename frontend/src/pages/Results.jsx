@@ -136,7 +136,8 @@ const Results = () => {
         }
 
         addText(`Question ${index + 1}`, 12, true, [212, 165, 116]);
-        addText(questions[index], 10, false, [26, 24, 23]);
+        const questionText = typeof questions[index] === 'object' ? questions[index].question : questions[index];
+        addText(questionText, 10, false, [26, 24, 23]);
         yPosition += 3;
 
         addText('Answer:', 10, true);
@@ -253,7 +254,7 @@ const Results = () => {
                 </span>
               </div>
               <p className="text-[#6B6662] font-light leading-relaxed mb-3">
-                <strong>Question:</strong> {questions[index]}
+                <strong>Question:</strong> {typeof questions[index] === 'object' ? questions[index].question : questions[index]}
               </p>
               <p className="text-[#6B6662] font-light leading-relaxed mb-3">
                 <strong>Your Answer:</strong> {answers[index]}

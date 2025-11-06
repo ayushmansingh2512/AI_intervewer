@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 const Interview = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { questions } = location.state || { questions: [] };
+  const { questions, questionType } = location.state || { questions: [], questionType: '' };
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
@@ -29,6 +29,8 @@ const Interview = () => {
     );
   }
 
+  const currentQuestion = questions[currentQuestionIndex];
+  const isMcq = questionType === 'quantitative-logical';
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
@@ -55,18 +57,39 @@ const Interview = () => {
         <div className="bg-white rounded-lg p-10 shadow-sm border border-[#E5E1DC]">
           <div className="mb-8">
             <h2 className="text-3xl font-light text-[#1A1817] mb-6 leading-relaxed">
-              {questions[currentQuestionIndex]}
+              {typeof currentQuestion === 'object' ? currentQuestion.question : currentQuestion}
             </h2>
           </div>
 
           <div className="space-y-6">
-            <textarea
-              value={currentAnswer}
-              onChange={(e) => setCurrentAnswer(e.target.value)}
-              placeholder="Share your thoughts here..."
-              rows="8"
-              className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] placeholder-[#9B9791] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200 resize-none"
-            />
+            {isMcq && typeof currentQuestion === 'object' ? (
+              <div className="space-y-4">
+                {currentQuestion.options.map((option, index) => (
+                  <div key={index} className="flex items-center">
+                    <input
+                      type="radio"
+                      id={`option-${index}`}
+                      name="mcq-option"
+                      value={option}
+                      checked={currentAnswer === option}
+                      onChange={(e) => setCurrentAnswer(e.target.value)}
+                      className="h-4 w-4 text-[#D4A574] border-[#E5E1DC] focus:ring-[#D4A574]"
+                    />
+                    <label htmlFor={`option-${index}`} className="ml-3 block text-lg font-light text-[#1A1817]">
+                      {option}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <textarea
+                value={currentAnswer}
+                onChange={(e) => setCurrentAnswer(e.target.value)}
+                placeholder="Share your thoughts here..."
+                rows="8"
+                className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] placeholder-[#9B9791] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200 resize-none"
+              />
+            )}
 
             <button 
               onClick={handleNextQuestion}

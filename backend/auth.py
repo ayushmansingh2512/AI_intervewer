@@ -9,8 +9,16 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 import requests
 import bcrypt
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from backend import crud, schemas
+from backend.database import get_db
+
 
 load_dotenv()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Google OAuth2 settings
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -118,3 +126,22 @@ def get_google_user_info(code: str):
     if user_info_res.status_code == 200:
         return user_info_res.json()
     return None
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(email=email)
+    except JWTError:
+        raise credentials_exception
+    user = crud.get_user_by_email(db, email=token_data.email)
+    if user is None:
+        raise credentials_exception
+    return user

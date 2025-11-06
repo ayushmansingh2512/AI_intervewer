@@ -15,6 +15,8 @@ async def evaluate_answers(request: schemas.EvaluateRequest):
 
     # Format questions and answers for prompt
     qa_pairs = "\n\n".join([
+        f"Q{i+1}: {q['question']}\nOptions: {q['options']}\nCorrect Answer: {q['answer']}\nUser's Answer: {a}"
+        if isinstance(q, dict) else
         f"Q{i+1}: {q}\nA{i+1}: {a}" 
         for i, (q, a) in enumerate(zip(request.questions, request.answers))
     ])

@@ -27,7 +27,7 @@ const CreateInterview = () => {
     try {
       const response = await axios.post('http://localhost:8000/generate-questions', formData);
       if (response.data) {
-        navigate('/dashboard/interview', { state: { questions: response.data } });
+        navigate('/dashboard/interview', { state: { questions: response.data, questionType: formData.questionType } });
       }
     } catch (error) {
       toast.error('Failed to generate questions. Please try again.');
@@ -146,7 +146,7 @@ const CreateInterview = () => {
                   <option value="system-design">System Design</option>
                   <option value="behavioral">Behavioral Questions</option>
                   <option value="theoretical">Theoretical/Conceptual</option>
-                    <option value="reasoning">quantitative aptitude and logical reasoning</option>
+                  <option value="quantitative-logical">Quantitative Aptitude & Logical Reasoning</option>
                 </select>
               </div>
 

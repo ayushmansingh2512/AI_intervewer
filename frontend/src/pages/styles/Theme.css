@@ -1,54 +1,18 @@
-:root{
-   --bg-gradient: linear-gradient(to right,#bcc2c6, #2c3e50);
-   --text-black: black;
-   --text-gray-800: rgb(31, 41, 55);
-   --ele-focus: #2c3e50;
-   --ele-error: rgb(248, 113, 113);
-}
-
-.move-bg {
-  background: var(--bg-gradient);
-  background-size: 120% 120%;
-  animation: gradientShift 8s ease infinite;
-  border-radius: 0;
-  perspective: 1000px;
-  will-change: transform;
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.text-clr{
-  color: var(--text-black)
-}
-
-.text-gray-8{
-  color: var(--text-gray-800);
-}
-
-.focus-ele:focus{
-  box-shadow: 0px 0px 2px 2px var(--ele-focus);
-  backdrop-filter: blur(60px);
-  -webkit-backdrop-filter: blur(60px);
-}
-
-.hover-ele:hover{
-    box-shadow: 0px 0px 2px 2px var(--ele-focus);
-}
-
-.error-ele{
-  border: #ef4444;
-}
-
-.error-ele:focus{
-  box-shadow: 0px 0px 2px 2px var(--ele-error);
+/* src/new.css */
+:root {
+  --background-light: #FAF9F5;
+  --text-light: #3D3D3A  ;
+  --header-bg-light: #FAF9F5;
+  
+  --card-name-light: #222;
+  --card-roll-light: #717171;
+  --primary-color: #D97757;
+  --search-border-light: #e1e5e9;
+  --bottom-sheet-bg-light: #FAF9F5;
+  --bottom-sheet-header-bg-light: #FAF9F5;
+  --bottom-sheet-btn-bg-light: #E3DACC;
+  --bottom-sheet-btn-color-light: #555;
+  --social-btn-bg-light: #FAF9F5;
+  --social-btn-border-light: rgba(217, 119, 87, 0.2);
+  --social-btn-color-light: #222;
 }
