@@ -20,6 +20,7 @@ from backend.api.evaluate_voice_interview import evaluate_voice_interview
 from backend.api.analyze_cv import analyze_cv
 from backend.api.startup_cleanup import startup_cleanup
 from backend.api import users as users_router
+from backend.api import roadmap as roadmap_router
 
 load_dotenv()
 app = FastAPI()
@@ -37,24 +38,24 @@ app.add_middleware(
 )
 
 # Initialize database tables on startup
-from sqlalchemy import text
-
 @app.on_event("startup")
 async def startup_db():
-    with engine.connect() as con:
-        try:
-            con.execute(text("DROP TABLE users CASCADE"))
-            con.execute(text("DROP TABLE user_profiles CASCADE"))
-            con.execute(text("DROP TABLE mcq_interviews CASCADE"))
-        except Exception as e:
-            print(f"Warning: Could not drop tables: {e}")
-        con.commit()
-    model.Base.metadata.create_all(bind=engine)
+    try:
+        with engine.connect() as con:
+            con.execute(text("DROP TABLE IF EXISTS users CASCADE"))
+            con.execute(text("DROP TABLE IF EXISTS user_profiles CASCADE"))
+            con.execute(text("DROP TABLE IF EXISTS mcq_interviews CASCADE"))
+            con.commit()
+        model.Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print("An error occurred during database initialization:")
+        print(e)
 
 app.on_event("startup")(startup_cleanup)
 
 # Include the new users router
 app.include_router(users_router.router, prefix="/users", tags=["users"])
+app.include_router(roadmap_router.router, prefix="/roadmap", tags=["roadmap"])
 
 # <------------------- AUTH ENDPOINTS ------------------->
 

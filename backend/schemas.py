@@ -92,3 +92,6 @@ class VoiceInterviewEvaluationResponse(BaseModel):
     overall_feedback: str
     question_scores: List[dict] # e.g., [{"name": "Q1", "score": 7.5}]
     recommendations: List[str]
+
+class RoadmapRequest(BaseModel):
+    query: str
