@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from sqlalchemy import text
 from backend import model, schemas
 from backend.database import engine
 from dotenv import load_dotenv
