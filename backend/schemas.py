@@ -19,7 +19,7 @@ class User(BaseModel):
     is_google_user: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserLogin(BaseModel):

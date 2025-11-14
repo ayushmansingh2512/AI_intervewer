@@ -16,6 +16,23 @@ import CVParser from './pages/CVparser';
 import CreateVoiceInterview from './pages/CreateVoiceInterview';
 import VoiceInterview from './pages/VoiceInterview';
 import VoiceInterviewResults from './pages/VoiceInterviewResults';
+import CompanyLogin from './pages/CompanyLogin';
+import CompanySignup from './pages/CompanySignup';
+import CompanyOtpVerification from './pages/CompanyOtpVerification';
+import CompanyWelcomeForm from './pages/CompanyWelcomeForm';
+import CompanyDashboard from './pages/CompanyDashboard';
+import CompanyDashboardLayout from './pages/CompanyDashboardLayout';
+import CreateCompanyInterview from './pages/CreateCompanyInterview';
+import ResumeShortlisting from './pages/ResumeShortlisting';
+ 
+
+import InterviewCompleted from './pages/InterviewCompleted';
+ 
+
+import CompanyInterviewResults from './pages/CompanyInterviewResults';
+ 
+
+import CompanyProtectedRoute from './auth/CompanyProtectedRoute';
  
 
 function App() {
@@ -30,6 +47,12 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/otp" element={<Otpverification />} />
           <Route path="/welcome" element={<WelcomeForm />} /> 
+          <Route path="/company-login" element={<CompanyLogin />} />
+          <Route path="/company-signup" element={<CompanySignup />} />
+          <Route path="/company-otp" element={<CompanyOtpVerification />} />
+          <Route path="/company-welcome" element={<CompanyWelcomeForm />} />
+          <Route path="/interview/:interviewId" element={<Interview />} />
+          <Route path="/interview-completed" element={<InterviewCompleted />} />
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
           
@@ -97,7 +120,48 @@ function App() {
                           </DashboardLayout>
                         }
                       />
-  
+          </Route>
+          <Route element={<CompanyProtectedRoute />}>
+            <Route
+              path="/company/dashboard"
+              element={
+                <CompanyDashboardLayout>
+                  <CompanyDashboard />
+                </CompanyDashboardLayout>
+              }
+            />
+            <Route
+              path="/company/create-interview"
+              element={
+                <CompanyDashboardLayout>
+                  <CreateCompanyInterview />
+                </CompanyDashboardLayout>
+              }
+            />
+            <Route
+              path="/company/shortlist-resumes"
+              element={
+                <CompanyDashboardLayout>
+                  <ResumeShortlisting />
+                </CompanyDashboardLayout>
+              }
+            />
+            <Route
+              path="/company/interview-results"
+              element={
+                <CompanyDashboardLayout>
+                  <CompanyInterviewResults />
+                </CompanyDashboardLayout>
+              }
+            />
+            <Route
+              path="/company/interview-results/:interviewId"
+              element={
+                <CompanyDashboardLayout>
+                  <CompanyInterviewResults />
+                </CompanyDashboardLayout>
+              }
+            />
           </Route>
         </Routes>
       </BrowserRouter>

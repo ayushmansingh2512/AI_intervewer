@@ -1,23 +1,128 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 const Interview = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { questions, questionType } = location.state || { questions: [], questionType: '' };
+  const { interviewId } = useParams();
+  const { questions: locationQuestions, questionType } = location.state || { questions: [], questionType: '' };
+  
+  const [questions, setQuestions] = useState(locationQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
+  const [eyeTrackingStatus, setEyeTrackingStatus] = useState('Initializing...');
+  const [loading, setLoading] = useState(true);
+  const videoRef = useRef(null);
 
-  const handleNextQuestion = () => {
-    setAnswers([...answers, currentAnswer]);
+  useEffect(() => {
+    const fetchInterview = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8000/company/interview/${interviewId}`);
+        setQuestions(response.data.questions);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch interview', error);
+        setLoading(false);
+      }
+    };
+
+    if (interviewId) {
+      fetchInterview();
+    } else {
+      setLoading(false);
+    }
+  }, [interviewId]);
+
+  useEffect(() => {
+    let mediaRecorder;
+    let ws;
+
+    const startEyeTracking = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setEyeTrackingStatus('Eye-tracking is active.');
+
+        ws = new WebSocket(`ws://localhost:8000/company/interview/${interviewId}/stream`);
+        ws.onopen = () => {
+          console.log('WebSocket connection established.');
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              ws.send(event.data);
+            }
+          };
+          mediaRecorder.start(1000); // Send data every 1 second
+        };
+        ws.onclose = () => {
+          console.log('WebSocket connection closed.');
+        };
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+
+      } catch (error) {
+        console.error('Error accessing webcam:', error);
+        setEyeTrackingStatus('Could not access webcam.');
+      }
+    };
+
+    if (interviewId) {
+      startEyeTracking();
+    }
+
+    return () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        console.log('Stopped video stream.');
+      }
+    };
+  }, [interviewId]);
+
+  const handleNextQuestion = async () => {
+    const newAnswers = [...answers, currentAnswer];
+    setAnswers(newAnswers);
     setCurrentAnswer('');
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      navigate('/dashboard/results', { state: { questions, answers: [...answers, currentAnswer] } });
+      if (interviewId) {
+        try {
+          await axios.post(`http://localhost:8000/company/interview/${interviewId}/submit`, {
+            answers: newAnswers,
+          });
+          navigate(`/interview-completed`); // Redirect to a completion page
+        } catch (error) {
+          console.error('Failed to submit answers', error);
+          // Handle error appropriately
+        }
+      } else {
+        navigate('/dashboard/results', { state: { questions, answers: newAnswers } });
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-[#6B6662] font-light">Loading interview...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (questions.length === 0) {
     return (
@@ -35,7 +140,11 @@ const Interview = () => {
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-6">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-3xl relative">
+        <div className="absolute top-4 right-4 text-xs text-gray-500">
+            {eyeTrackingStatus}
+        </div>
+        <video ref={videoRef} autoPlay playsInline muted style={{ width: '160px', height: '120px', position: 'absolute', top: '40px', right: '20px', border: '1px solid #ccc' }} />
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">

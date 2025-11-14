@@ -99,7 +99,7 @@ const Dashboard = () => {
         </div>
 
         <h1 className="text-5xl font-light text-[#3D3D3A] tracking-tight">
-          Good afternoon, <span className="text-[#D97757]">{firstName}</span>.
+          Good afternoon, <span className="text-[#D97757] font-[DM-Serif-Display]">{firstName}</span>.
         </h1>
         
         <p className="text-lg text-[#6B6B68] font-medium">

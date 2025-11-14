@@ -10,3 +10,6 @@ google-auth-oauthlib
 alembic
 bcrypt
 pydub
+opencv-python
+dlib
+numpy

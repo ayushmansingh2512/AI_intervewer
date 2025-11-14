@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from sqlalchemy import text
 from backend import model, schemas
 from backend.database import engine
 from dotenv import load_dotenv
@@ -21,8 +21,16 @@ from backend.api.analyze_cv import analyze_cv
 from backend.api.startup_cleanup import startup_cleanup
 from backend.api import users as users_router
 from backend.api import roadmap as roadmap_router
+from backend.compony_api import main as company_api_router
+from backend.compony_api import models as company_models
+
+import asyncio
+import os
+import google.generativeai as genai
 
 load_dotenv()
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=gemini_api_key)
 app = FastAPI()
 
 # Add CORS middleware FIRST, before any routes
@@ -39,23 +47,20 @@ app.add_middleware(
 
 # Initialize database tables on startup
 @app.on_event("startup")
-async def startup_db():
+async def startup():
+    await asyncio.sleep(5) # Add a delay to allow the database to stabilize
     try:
-        with engine.connect() as con:
-            con.execute(text("DROP TABLE IF EXISTS users CASCADE"))
-            con.execute(text("DROP TABLE IF EXISTS user_profiles CASCADE"))
-            con.execute(text("DROP TABLE IF EXISTS mcq_interviews CASCADE"))
-            con.commit()
         model.Base.metadata.create_all(bind=engine)
+        company_models.Base.metadata.create_all(bind=engine)
     except Exception as e:
         print("An error occurred during database initialization:")
         print(e)
-
-app.on_event("startup")(startup_cleanup)
+    await startup_cleanup()
 
 # Include the new users router
 app.include_router(users_router.router, prefix="/users", tags=["users"])
 app.include_router(roadmap_router.router, prefix="/roadmap", tags=["roadmap"])
+app.include_router(company_api_router.router, prefix="/company", tags=["company"])
 
 # <------------------- AUTH ENDPOINTS ------------------->
 
