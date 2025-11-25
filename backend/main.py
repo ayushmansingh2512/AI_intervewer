@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from backend import model, schemas
@@ -36,13 +36,10 @@ app = FastAPI()
 # Add CORS middleware FIRST, before any routes
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend URLs
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all methods including OPTIONS
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Initialize database tables on startup
@@ -61,6 +58,8 @@ async def startup():
 app.include_router(users_router.router, prefix="/users", tags=["users"])
 app.include_router(roadmap_router.router, prefix="/roadmap", tags=["roadmap"])
 app.include_router(company_api_router.router, prefix="/company", tags=["company"])
+from backend.compony_api import tts_routes
+app.include_router(tts_routes.router, tags=["tts"])
 
 # <------------------- AUTH ENDPOINTS ------------------->
 
@@ -69,7 +68,7 @@ app.post("/verify-otp")(verify_otp)
 app.post("/getting-started", response_model=schemas.Token)(getting_started)
 app.post("/login", response_model=schemas.Token)(login)
 app.get("/auth/google")(auth_google)
-app.get("/auth/google/callback", response_model=schemas.Token)(auth_google_callback)
+app.get("/auth/google/callback")(auth_google_callback)
 
 # <------------------- TEXT-BASED INTERVIEW ------------------->
 

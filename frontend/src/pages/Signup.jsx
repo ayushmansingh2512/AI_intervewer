@@ -87,7 +87,10 @@ function Signup() {
           <div className="flex-grow border-t border-black"></div>
         </div>
 
-        <button className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg flex items-center justify-center hover-ele transition">
+        <button
+          onClick={() => window.location.href = 'http://localhost:8000/auth/google'}
+          className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg flex items-center justify-center hover-ele transition"
+        >
           <img
             src="src/assets/images/icons8-google-50.png"
             alt="Google Logo"

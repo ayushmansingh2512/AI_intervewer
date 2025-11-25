@@ -30,6 +30,8 @@ def create_google_user(db: Session, user_info: dict):
     )
     db.add(db_user)
     db.commit()
+    db.refresh(db_user)
+    return db_user
 
 def verify_user(db: Session, email: str):
     db_user = get_user_by_email(db, email)

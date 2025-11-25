@@ -39,11 +39,21 @@ def update_company(db: Session, company: schemas.CompanyCreate):
     return db_company
 
 def create_interview(db: Session, interview: schemas.InterviewCreate, company_id: int, interview_id: str):
+    from datetime import datetime
+    
+    # Convert ISO string to datetime if provided
+    scheduled_start = None
+    if interview.scheduled_start_time:
+        scheduled_start = datetime.fromisoformat(interview.scheduled_start_time.replace('Z', '+00:00'))
+    
     db_interview = models.Interview(
-        candidate_email=interview.candidate_email,
+        candidate_email=interview.candidate_emails[0],  # Extract first email from list
         company_id=company_id,
         interview_id=interview_id,
         questions=interview.questions,
+        scheduled_start_time=scheduled_start,
+        duration_minutes=interview.duration_minutes,
+        interview_type=interview.interview_type,
     )
     db.add(db_interview)
     db.commit()
@@ -64,4 +74,4 @@ def create_answer(db: Session, interview_id: str, answers: List[str]):
     return db_answer
 
 def get_interviews_by_company(db: Session, company_id: int):
-    return db.query(models.Interview).filter(models.Interview.company_id == company_id).all()
+    return db.query(models.Interview).filter(models.Interview.company_id == company_id).order_by(models.Interview.id.desc()).all()

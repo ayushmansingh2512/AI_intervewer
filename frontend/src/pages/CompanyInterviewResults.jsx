@@ -68,10 +68,117 @@ const CompanyInterviewResults = () => {
       let yPosition = 20;
       const margin = 20;
       const contentWidth = pageWidth - 2 * margin;
+      const lineHeight = 7;
 
-      // ... (PDF generation logic from Results.jsx, adapted for the new data structure)
+      // Helper function to add new page if needed
+      const checkPageBreak = (requiredSpace) => {
+        if (yPosition + requiredSpace > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+      };
 
-      doc.save('interview-results.pdf');
+      // Helper function to wrap text
+      const addWrappedText = (text, x, y, maxWidth, fontSize = 10) => {
+        doc.setFontSize(fontSize);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach((line, index) => {
+          checkPageBreak(lineHeight);
+          doc.text(line, x, y + (index * lineHeight));
+        });
+        return lines.length * lineHeight;
+      };
+
+      // Title
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Interview Results', margin, yPosition);
+      yPosition += 15;
+
+      // Candidate Information
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Candidate Information', margin, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Email: ${evaluation.candidate_email}`, margin, yPosition);
+      yPosition += lineHeight;
+
+      // Format timestamp to Indian timezone
+      if (evaluation.submitted_at) {
+        const submittedDate = new Date(evaluation.submitted_at);
+        const istTime = submittedDate.toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        });
+        doc.text(`Submitted: ${istTime} IST`, margin, yPosition);
+        yPosition += lineHeight + 5;
+      }
+
+      // Average Score
+      const { questions, answers, evaluation: detailedEvaluation } = evaluation;
+      const averageScore = (detailedEvaluation.reduce((sum, item) => sum + item.score, 0) / detailedEvaluation.length).toFixed(1);
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Overall Performance', margin, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(14);
+      doc.text(`Average Score: ${averageScore}/10`, margin, yPosition);
+      yPosition += 15;
+
+      // Detailed Evaluation
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Detailed Evaluation', margin, yPosition);
+      yPosition += 10;
+
+      // Each question
+      detailedEvaluation.forEach((item, index) => {
+        checkPageBreak(40);
+
+        // Question number and score
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Question ${index + 1} - Score: ${item.score}/10`, margin, yPosition);
+        yPosition += lineHeight + 2;
+
+        // Question text
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Q:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        const questionHeight = addWrappedText(questions[index], margin + 10, yPosition, contentWidth - 10, 10);
+        yPosition += questionHeight + 3;
+
+        // Answer text
+        checkPageBreak(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('A:', margin, yPosition);
+        doc.setFont('helvetica', 'normal');
+        const answerHeight = addWrappedText(answers[index], margin + 10, yPosition, contentWidth - 10, 10);
+        yPosition += answerHeight + 3;
+
+        // Feedback
+        checkPageBreak(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Feedback:', margin, yPosition);
+        yPosition += lineHeight;
+        doc.setFont('helvetica', 'normal');
+        const feedbackHeight = addWrappedText(item.feedback, margin + 10, yPosition, contentWidth - 10, 10);
+        yPosition += feedbackHeight + 10;
+      });
+
+      doc.save(`interview-results-${evaluation.candidate_email}.pdf`);
       toast.success('PDF downloaded successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -157,6 +264,35 @@ const CompanyInterviewResults = () => {
           </button>
         </div>
 
+        {/* Candidate Information Card */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-[#E5E1DC] mb-8">
+          <h3 className="text-lg font-light text-[#1A1817] mb-4">Candidate Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-light text-[#6B6662] mb-1 tracking-wide uppercase">Email</p>
+              <p className="text-[#1A1817] font-light">{evaluation.candidate_email}</p>
+            </div>
+            <div>
+              <p className="text-xs font-light text-[#6B6662] mb-1 tracking-wide uppercase">Submitted At</p>
+              <p className="text-[#1A1817] font-light">
+                {evaluation.submitted_at
+                  ? new Date(evaluation.submitted_at).toLocaleString('en-IN', {
+                    timeZone: 'Asia/Kolkata',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                  }) + ' IST'
+                  : 'N/A'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Average Score Card */}
         <div className="bg-white rounded-lg p-8 shadow-sm border border-[#E5E1DC] mb-8">
           <div className="text-center">
@@ -175,13 +311,13 @@ const CompanyInterviewResults = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E1DC" />
                 <XAxis dataKey="name" tick={{ fill: '#6B6662', fontWeight: 300 }} />
                 <YAxis tick={{ fill: '#6B6662', fontWeight: 300 }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#FFFFFF', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#FFFFFF',
                     border: '1px solid #E5E1DC',
                     borderRadius: '8px',
                     fontWeight: 300
-                  }} 
+                  }}
                 />
                 <Bar dataKey="score" fill="#1A1817" radius={[4, 4, 0, 0]} />
               </BarChart>

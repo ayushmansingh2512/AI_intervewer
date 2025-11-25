@@ -26,10 +26,21 @@ async def process_resume(resume: UploadFile, job_description: str, model: genai.
         return None
 
     prompt = f"""
-    Score the following resume on a scale of 1 to 10 based on how well it matches the job description.
-    Also extract the candidate's name and email.
-    Provide a brief justification for the score.
-    Return the result as a JSON object with "name", "email", "score", and "justification" properties.
+    Analyze the following resume against the provided job description.
+    Provide a detailed structured analysis in JSON format with the following fields:
+    - "name": Candidate's full name
+    - "email": Candidate's email
+    - "score": Overall match score (0-100)
+    - "category_scores": Object with scores (0-100) for:
+        - "skills": Skills match
+        - "experience": Experience relevance
+        - "education": Education/Certifications match
+    - "skills_found": List of relevant skills found in the resume
+    - "missing_skills": List of critical skills from JD missing in resume
+    - "years_of_experience": Extracted total years of relevant experience (string, e.g., "5 years")
+    - "summary": Brief professional summary of the candidate (max 2 sentences)
+    - "recommendation": One of "Strong Match", "Potential Match", "No Match"
+    - "justification": Detailed explanation of the score and recommendation
 
     Job Description:
     {job_description}

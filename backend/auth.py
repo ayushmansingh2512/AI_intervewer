@@ -97,12 +97,24 @@ async def send_otp_email(email: str, otp: str):
     await fm.send_message(message)
 
 # Google OAuth2 Flow
-def get_google_auth_url():
-    flow = Flow.from_client_secrets_file(
-        'client_secret.json',
+def get_google_flow():
+    client_config = {
+        "web": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [GOOGLE_REDIRECT_URI],
+        }
+    }
+    return Flow.from_client_config(
+        client_config,
         scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
         redirect_uri=GOOGLE_REDIRECT_URI
     )
+
+def get_google_auth_url():
+    flow = get_google_flow()
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true'
@@ -110,11 +122,7 @@ def get_google_auth_url():
     return authorization_url
 
 def get_google_user_info(code: str):
-    flow = Flow.from_client_secrets_file(
-        'client_secret.json',
-        scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-        redirect_uri=GOOGLE_REDIRECT_URI
-    )
+    flow = get_google_flow()
     flow.fetch_token(code=code)
     credentials = flow.credentials
     

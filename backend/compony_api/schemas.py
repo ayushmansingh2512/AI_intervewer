@@ -37,14 +37,18 @@ class OTPVerify(BaseModel):
         return v
 
 class InterviewCreate(BaseModel):
-    candidate_email: EmailStr
+    candidate_emails: List[EmailStr]  # Changed to support multiple emails
     questions: List[str]
+    scheduled_start_time: Optional[str] = None  # ISO format datetime string
+    duration_minutes: Optional[int] = None  # Duration in minutes
+    interview_type: Optional[str] = "text"  # 'text' or 'voice'
 
 class Interview(BaseModel):
     id: int
     candidate_email: EmailStr
     company_id: int
     interview_id: str
+    interview_type: str
 
     class Config:
         from_attributes = True

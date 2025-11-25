@@ -1,5 +1,6 @@
 
 from fastapi import Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from backend import crud, schemas, auth
@@ -15,4 +16,6 @@ def auth_google_callback(code: str, db: Session = Depends(get_db)):
         db_user = crud.create_google_user(db, user_info)
         
     access_token = auth.create_access_token(data={"sub": db_user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    # Redirect to frontend with token
+    return RedirectResponse(url=f"http://localhost:5173/google-callback?token={access_token}")

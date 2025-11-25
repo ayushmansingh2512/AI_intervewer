@@ -14,7 +14,7 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-//error reset
+    //error reset
     setErrors({ email: "", password: "", general: "" });
 
     //validation 
@@ -67,12 +67,12 @@ function Login() {
   return (
     <div className="move-bg min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-transparent p-8">
-  
+
         <h2 className="text-clr text-3xl font-bold text-left my-6">
           Welcome Back
         </h2>
 
-    
+
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div>
@@ -81,9 +81,8 @@ function Login() {
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full p-2 border rounded-md transition outline-none mb-3 ${
-                errors.email ? "error-ele focus:error-ele" : "focus-ele hover-ele"
-              }`}
+              className={`w-full p-2 border rounded-md transition outline-none mb-3 ${errors.email ? "error-ele focus:error-ele" : "focus-ele hover-ele"
+                }`}
             />
             {errors.email && (
               <p className="text-sm text-red-500 mt-1">{errors.email}</p>
@@ -96,9 +95,8 @@ function Login() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`w-full p-2 border rounded-md outline-none transition mb-3 ${
-                errors.password ? "error-ele focus:error-ele" : "focus-ele hover-ele"
-              }`}
+              className={`w-full p-2 border rounded-md outline-none transition mb-3 ${errors.password ? "error-ele focus:error-ele" : "focus-ele hover-ele"
+                }`}
             />
             {errors.password && (
               <p className="text-sm text-red-500 mt-1">{errors.password}</p>
@@ -133,7 +131,10 @@ function Login() {
           <div className="flex-grow border-t border-black"></div>
         </div>
 
-        <button className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg transition flex items-center justify-center hover-ele">
+        <button
+          onClick={() => window.location.href = 'http://localhost:8000/auth/google'}
+          className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg transition flex items-center justify-center hover-ele"
+        >
           <img
             src="src/assets/images/icons8-google-50.png"
             alt="Google Logo"

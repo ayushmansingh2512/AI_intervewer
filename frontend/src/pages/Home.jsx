@@ -21,13 +21,13 @@ function Home() {
 
         <div className="flex space-x-4 mt-4">
           <NavLink
-            to="/login"
+            to="/company-login"
             className="px-8 py-3 bg-[#3D3D3A] text-white rounded-lg font-medium hover:bg-[#2D2D2A] transition-colors shadow-md"
           >
             Company
           </NavLink>
           <NavLink
-            to="/signup"
+            to="/login"
             className="px-8 py-3 bg-[#D97757] text-white rounded-lg font-medium hover:bg-[#C56545] transition-colors shadow-md"
           >
             Talent
