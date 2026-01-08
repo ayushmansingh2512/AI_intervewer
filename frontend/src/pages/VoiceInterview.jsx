@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Loader, Volume2, Zap } from 'lucide-react';
+import { API_URL } from '../config';
 import { motion } from 'framer-motion';
 
 const ClockLoader = () => {
@@ -252,7 +253,7 @@ const VoiceInterview = () => {
       formData.append('current_question_index', currentQuestionIndex);
       formData.append('total_questions', initialQuestions.length);
 
-      const response = await axios.post('http://localhost:8000/process-voice-answer', formData, {
+      const response = await axios.post(`${API_URL}/process-voice-answer`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
