@@ -12,7 +12,7 @@ import CreateInterview from './pages/CreateInterview';
 import Interview from './pages/Interview';
 import Results from './pages/Results';
 import './App.css';
-import CVParser from './pages/CVparser';
+import CVParser from './pages/CVParser';
 import CreateVoiceInterview from './pages/CreateVoiceInterview';
 import VoiceInterview from './pages/VoiceInterview';
 import VoiceInterviewResults from './pages/VoiceInterviewResults';
