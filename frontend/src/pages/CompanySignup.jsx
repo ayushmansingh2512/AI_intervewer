@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 import "./styles/Theme.css";
+import { API_URL } from "../config";
 
 function CompanySignup() {
   const [email, setEmail] = useState("");
@@ -23,7 +24,7 @@ function CompanySignup() {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/company/signup", {
+      const response = await axios.post(`${API_URL}/company/signup`, {
         email,
         company_name: companyName,
       });
