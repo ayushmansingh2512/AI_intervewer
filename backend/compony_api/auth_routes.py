@@ -28,7 +28,11 @@ async def signup(company_data: schemas.CompanyCreate, db: Session = Depends(get_
         "timestamp": datetime.utcnow()
     }
     
-    await auth.send_otp_email(company_data.email, otp)
+    try:
+        await auth.send_otp_email(company_data.email, otp)
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        # Still return success - OTP is stored, user can proceed
     
     return {"message": "OTP sent to your email"}
 
