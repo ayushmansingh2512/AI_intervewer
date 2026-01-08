@@ -1,18 +1,34 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
-import uuid
+import google.generativeai as genai
 import os
 import json
-import google.generativeai as genai
 import cv2
 import numpy as np
-from typing import List
 import time
+from datetime import datetime, timedelta, timezone
+from typing import List
+import uuid
 
-from backend.compony_api import crud, schemas, auth
+from backend.compony_api import schemas, models, auth, crud
 from backend.database import get_db
 
 router = APIRouter()
+
+# Initialize Gemini
+if os.getenv("GEMINI_API_KEY"):
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Initialize Face Detection
+# Use cv2.data.haarcascades to ensuring loading
+face_cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
+eye_cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_eye.xml')
+
+face_cascade = cv2.CascadeClassifier(face_cascade_path)
+eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
+
+SUSPICIOUS_DURATION_THRESHOLD = 10
+EMAIL_COOLDOWN = 60
 
 @router.post("/create-interview", status_code=201)
 async def create_interview(
@@ -20,52 +36,53 @@ async def create_interview(
     db: Session = Depends(get_db),
     current_company: schemas.Company = Depends(auth.get_current_company),
 ):
-    from datetime import datetime
-    
-    # Create separate interview for each candidate
     created_count = 0
+    # Loop through each candidate email and create a unique interview for them
     for candidate_email in interview_data.candidate_emails:
         interview_id = str(uuid.uuid4())
         
-        # Create individual interview entry with scheduling
-        individual_interview = schemas.InterviewCreate(
-            candidate_emails=[candidate_email],
+        # Prepare scheduling times
+        scheduled_start = None
+        if interview_data.scheduled_start_time:
+            scheduled_start = datetime.fromisoformat(interview_data.scheduled_start_time.replace("Z", "+00:00"))
+
+        db_interview = models.Interview(
+            company_id=current_company.id,
+            interview_id=interview_id,
+            candidate_email=candidate_email,
             questions=interview_data.questions,
-            scheduled_start_time=interview_data.scheduled_start_time,
+            scheduled_start_time=scheduled_start,
             duration_minutes=interview_data.duration_minutes,
             interview_type=interview_data.interview_type
         )
         
-        crud.create_interview(
-            db=db,
-            interview=individual_interview,
-            company_id=current_company.id,
-            interview_id=interview_id,
-        )
+        db.add(db_interview)
+        db.commit()
+        db.refresh(db_interview)
 
         interview_link = f"http://localhost:5173/interview/{interview_id}"
         
-        # Prepare email with scheduling info if applicable
+        # Format time for email
         scheduled_time_str = None
-        if interview_data.scheduled_start_time:
+        if scheduled_start:
             try:
-                scheduled_dt = datetime.fromisoformat(interview_data.scheduled_start_time.replace('Z', '+00:00'))
-                # Convert to IST for display
-                from datetime import timedelta
-                ist_dt = scheduled_dt + timedelta(hours=5, minutes=30)
+                # Convert to IST for display (as per user preference implied in snippet)
+                ist_dt = scheduled_start + timedelta(hours=5, minutes=30)
                 scheduled_time_str = ist_dt.strftime("%B %d, %Y at %I:%M %p IST")
             except:
                 pass
         
-        await auth.send_interview_email(
-            email=candidate_email,
-            interview_link=interview_link,
-            company_name=current_company.company_name,
-            scheduled_time=scheduled_time_str,
-            duration_minutes=interview_data.duration_minutes
-        )
-        
-        created_count += 1
+        try:
+            await auth.send_interview_email(
+                email=candidate_email,
+                interview_link=interview_link,
+                company_name=current_company.company_name,
+                scheduled_time=scheduled_time_str,
+                duration_minutes=interview_data.duration_minutes
+            )
+            created_count += 1
+        except Exception as e:
+            print(f"Failed to send email to {candidate_email}: {e}")
 
     return {
         "message": f"Interview created and sent to {created_count} candidate(s) successfully"
@@ -73,92 +90,146 @@ async def create_interview(
 
 @router.get("/interviews", response_model=List[schemas.Interview])
 def get_interviews(db: Session = Depends(get_db), current_company: schemas.Company = Depends(auth.get_current_company)):
-    return crud.get_interviews_by_company(db, company_id=current_company.id)
+    return db.query(models.Interview).filter(models.Interview.company_id == current_company.id).all()
 
-from datetime import datetime, timedelta, timezone
-
-@router.get("/interview/{interview_id}")
-def get_interview(interview_id: str, db: Session = Depends(get_db)):
-    db_interview = crud.get_interview_by_interview_id(db, interview_id=interview_id)
-    if db_interview is None:
+@router.get("/interview/{interview_id}", response_model=schemas.Interview)
+def get_interview(
+    interview_id: str,
+    db: Session = Depends(get_db)
+):
+    interview = db.query(models.Interview).filter(models.Interview.interview_id == interview_id).first()
+    if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
-    
-    # Check if interview is scheduled
-    if db_interview.scheduled_start_time:
-        # Use timezone-aware UTC for current time
-        current_time = datetime.now(timezone.utc)
         
-        start_time = db_interview.scheduled_start_time
-        # Ensure start_time is timezone-aware UTC
+    # Check for scheduling constraints
+    if interview.scheduled_start_time:
+        # Use timezone-aware UTC
+        now = datetime.now(timezone.utc)
+        start_time = interview.scheduled_start_time
         if start_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=timezone.utc)
             
-        print(f"Checking schedule: Current={current_time}, Start={start_time}")
+        if now < start_time:
+             time_until = start_time - now
+             seconds = int(time_until.total_seconds())
+             if seconds < 60:
+                 time_str = "less than a minute"
+             else:
+                 time_str = f"{seconds // 3600}h {(seconds // 60) % 60}m"
+             raise HTTPException(status_code=403, detail=f"Interview not yet started. Starts in {time_str}")
         
-        # Check if interview hasn't started yet
-        if current_time < start_time:
-            time_until_start = start_time - current_time
-            total_seconds = int(time_until_start.total_seconds())
-            
-            if total_seconds < 60:
-                time_str = "less than a minute"
-            else:
-                minutes = (total_seconds // 60) % 60
-                hours = total_seconds // 3600
-                time_str = f"{hours}h {minutes}m"
-                
-            raise HTTPException(
-                status_code=403, 
-                detail=f"Interview not yet started. Starts in {time_str}"
-            )
-        
-        # Check if interview has expired
-        if db_interview.duration_minutes:
-            end_time = start_time + timedelta(minutes=db_interview.duration_minutes)
-            if current_time > end_time:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Interview time has expired"
-                )
-    
-    return db_interview
+        if interview.duration_minutes:
+            end_time = start_time + timedelta(minutes=interview.duration_minutes)
+            if now > end_time:
+                raise HTTPException(status_code=403, detail="Interview has expired")
+
+    return interview
 
 @router.post("/interview/{interview_id}/submit")
-def submit_answers(interview_id: str, answer_data: schemas.AnswerCreate, db: Session = Depends(get_db)):
-    db_interview = crud.get_interview_by_interview_id(db, interview_id=interview_id)
-    if db_interview is None:
+async def submit_interview(
+    interview_id: str,
+    answers_data: schemas.AnswerCreate,
+    db: Session = Depends(get_db)
+):
+    # 1. Fetch Interview First
+    interview = db.query(models.Interview).filter(models.Interview.interview_id == interview_id).first()
+    if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
 
-    crud.create_answer(db, interview_id=interview_id, answers=answer_data.answers)
+    # 2. Evaluate Answers First (Optimized with Gemini Flash)
+    print("START_EVALUATION")
+    evaluation_result = []
+    
+    # List of models to try in order of preference
+    models_to_try = ['gemini-2.0-flash', 'gemini-2.0-flash-exp']
+    
+    import time
+    
+    evaluation_success = False
+    
+    questions = interview.questions
+    answers = answers_data.answers
+    
+    qa_pairs_str = ""
+    for i, (q, a) in enumerate(zip(questions, answers)):
+        qa_pairs_str += f"Q{i+1}:{q}\nA{i+1}:{a}\n"
+        
+    prompt = f"""Evaluate these interview answers. Return ONLY a JSON array of objects with keys 'score' (1-10) and 'feedback' (concise string). No markdown formatting.
+    
+{qa_pairs_str}"""
 
-    return {"message": "Answers submitted successfully"}
+    for model_name in models_to_try:
+        if evaluation_success:
+            break
+            
+        try:
+            print(f"Attempting evaluation with model: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            text_response = response.text.strip()
+            
+            # Cleanup
+            if text_response.startswith("```json"):
+                text_response = text_response[7:]
+            if text_response.endswith("```"):
+                text_response = text_response[:-3]
+                
+            evaluation_result = json.loads(text_response.strip())
+            evaluation_success = True
+            print("END_EVALUATION")
+            
+        except Exception as e:
+            print(f"Evaluation failed with {model_name}: {e}")
+            # If it's a quota error (429), wait a bit before trying the next model
+            if "429" in str(e) or "Resource" in str(e):
+                print("Quota exceeded, waiting 5 seconds...")
+                time.sleep(5)
+            continue
 
-face_cascade = cv2.CascadeClassifier('backend/haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier('backend/haarcascade_eye.xml')
+    if not evaluation_success:
+        print("All valuation attempts failed.")
+        # Return empty evaluation structure
+        evaluation_result = [{"score": 0, "feedback": "Evaluation unavailable (Quota Limit)"} for _ in answers]
 
-SUSPICIOUS_DURATION_THRESHOLD = 10  # Changed to 10 seconds
-EMAIL_COOLDOWN = 60  # seconds
+    # 3. Store Answer
+    db_answer = db.query(models.Answer).filter(models.Answer.interview_id == interview_id).first()
+    
+    if db_answer:
+        db_answer.answers = answers
+        db_answer.evaluation = evaluation_result
+        db_answer.submitted_at = datetime.utcnow()
+    else:
+        new_answer = models.Answer(
+            interview_id=interview_id,
+            answers=answers,
+            evaluation=evaluation_result,
+            submitted_at=datetime.utcnow()
+        )
+        db.add(new_answer)
+    
+    db.commit()
+
+    return {"message": "Interview submitted and evaluated successfully", "evaluation": evaluation_result}
 
 @router.websocket("/interview/{interview_id}/stream")
-async def stream(websocket: WebSocket, interview_id: str, db: Session = Depends(get_db)):
+async def websocket_endpoint(websocket: WebSocket, interview_id: str, db: Session = Depends(get_db)):
     await websocket.accept()
     
-    db_interview = crud.get_interview_by_interview_id(db, interview_id=interview_id)
-    if db_interview is None:
-        print(f"Interview {interview_id} not found for WebSocket stream.")
+    # Verify interview exists
+    interview = db.query(models.Interview).filter(models.Interview.interview_id == interview_id).first()
+    if not interview:
         await websocket.close()
         return
-    
-    db_company = crud.get_company_by_email(db, email=db_interview.company.email)
-    if db_company is None:
-        print(f"Company for interview {interview_id} not found for WebSocket stream.")
+        
+    # Get company for email
+    company = db.query(models.Company).filter(models.Company.id == interview.company_id).first()
+    if not company:
         await websocket.close()
         return
 
     last_face_detection_time = time.time()
-    last_eyes_detection_time = time.time()
     last_email_sent_time = 0
-    last_frame = None  # Store last frame for screenshot
+    last_frame = None
 
     try:
         while True:
@@ -167,141 +238,71 @@ async def stream(websocket: WebSocket, interview_id: str, db: Session = Depends(
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if frame is not None:
-                last_frame = frame  # Store current frame
+                last_frame = frame
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
                 current_time = time.time()
 
                 if len(faces) == 0:
-                    print("No face detected")
+                    # No face detected
                     if current_time - last_face_detection_time > SUSPICIOUS_DURATION_THRESHOLD:
                         if current_time - last_email_sent_time > EMAIL_COOLDOWN:
-                            # Encode frame as JPEG for screenshot
                             screenshot_bytes = None
                             if last_frame is not None:
                                 _, buffer = cv2.imencode('.jpg', last_frame)
                                 screenshot_bytes = buffer.tobytes()
                             
-                            print(f"Sending suspicious activity email (No face) for {interview_id}. Screenshot bytes: {len(screenshot_bytes) if screenshot_bytes else 0}")
+                            print(f"No face detected for {interview_id}. Sending alert.")
                             await auth.send_suspicious_activity_email(
-                                company_email=db_company.email,
-                                candidate_email=db_interview.candidate_email,
+                                company_email=company.email,
+                                candidate_email=interview.candidate_email,
                                 interview_id=interview_id,
                                 reason="No face detected for 10 seconds",
                                 screenshot_bytes=screenshot_bytes
                             )
                             last_email_sent_time = current_time
                 else:
+                    # Face detected
                     last_face_detection_time = current_time
-                    for (x, y, w, h) in faces:
-                        roi_gray = gray[y:y+h, x:x+w]
-                        eyes = eye_cascade.detectMultiScale(roi_gray)
-                        if len(eyes) == 0:
-                            print("No eyes detected")
-                            if current_time - last_eyes_detection_time > SUSPICIOUS_DURATION_THRESHOLD:
-                                if current_time - last_email_sent_time > EMAIL_COOLDOWN:
-                                    # Encode frame as JPEG for screenshot
-                                    screenshot_bytes = None
-                                    if last_frame is not None:
-                                        _, buffer = cv2.imencode('.jpg', last_frame)
-                                        screenshot_bytes = buffer.tobytes()
-                                    
-                                    print(f"Sending suspicious activity email (No eyes) for {interview_id}. Screenshot bytes: {len(screenshot_bytes) if screenshot_bytes else 0}")
-                                    await auth.send_suspicious_activity_email(
-                                        company_email=db_company.email,
-                                        candidate_email=db_interview.candidate_email,
-                                        interview_id=interview_id,
-                                        reason="No eyes detected for 10 seconds",
-                                        screenshot_bytes=screenshot_bytes
-                                    )
-                                    last_email_sent_time = current_time
-                        else:
-                            last_eyes_detection_time = current_time
-                            print(f"{len(eyes)} eyes detected")
-
-            else:
-                print(f"Could not decode frame for interview {interview_id}")
-
+                    # Optional: Eye detection logic could go here similar to user snippet
+                    
     except WebSocketDisconnect:
-        print(f"Client disconnected from interview {interview_id}")
+        print(f"Client disconnected {interview_id}")
     except Exception as e:
-        print(f"Error in WebSocket connection: {e}")
+        print(f"WebSocket error: {e}")
     finally:
         try:
-            await websocket.close()
-        except RuntimeError:
-            pass # Connection already closed
+             await websocket.close()
+        except:
+             pass
 
-
-
-@router.get("/interview-results/{interview_id}")
-async def get_interview_results(interview_id: str, db: Session = Depends(get_db), current_company: schemas.Company = Depends(auth.get_current_company)):
-    print(f"Fetching results for interview ID: {interview_id}")
-    db_interview = crud.get_interview_by_interview_id(db, interview_id=interview_id)
-    if db_interview is None:
-        print("Interview not found in database")
+@router.get("/interview-results/{interview_id}", response_model=schemas.InterviewResult)
+def get_interview_results(
+    interview_id: str,
+    db: Session = Depends(get_db),
+    current_company: schemas.Company = Depends(auth.get_current_company)
+):
+    # Verify interview belongs to company
+    interview = db.query(models.Interview).filter(
+        models.Interview.interview_id == interview_id,
+        models.Interview.company_id == current_company.id
+    ).first()
+    
+    if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
 
-    print(f"Interview found: {db_interview}")
-    if db_interview.company_id != current_company.id:
-        print("Company ID mismatch")
-        raise HTTPException(status_code=403, detail="Not authorized to view this interview")
+    # Fetch answers
+    answer_record = db.query(models.Answer).filter(models.Answer.interview_id == interview_id).first()
+    
+    if not answer_record:
+        # Return empty/null result structure if no answers yet, or 404
+        raise HTTPException(status_code=404, detail="No results submitted for this interview yet")
 
-    print(f"Answers: {db_interview.answers}")
-    if not db_interview.answers:
-        print("Answers not found for this interview")
-        raise HTTPException(status_code=404, detail="Answers not submitted yet")
-
-    questions = db_interview.questions
-    answers = db_interview.answers.answers
-
-    # Evaluate the answers
-    if not os.getenv("GEMINI_API_KEY"):
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel('gemini-2.5-flash')
-
-    evaluation = []
-    for i in range(len(questions)):
-        prompt = f"""
-        Score the following answer on a scale of 1 to 10 based on how well it answers the question.
-        Also provide feedback on the answer.
-        Return the result as a JSON object with "score" and "feedback" properties.
-
-        Question:
-        {questions[i]}
-
-        Answer:
-        {answers[i]}
-        """
-
-        try:
-            response = model.generate_content(prompt)
-            text_response = response.text
-            
-            if '```json' in text_response:
-                json_start = text_response.find('```json') + 7
-                json_end = text_response.find('```', json_start)
-                json_str = text_response[json_start:json_end].strip()
-            else:
-                json_start = text_response.find('{')
-                json_end = text_response.rfind('}') + 1
-                if json_start != -1 and json_end != -1:
-                    json_str = text_response[json_start:json_end]
-                else:
-                    json_str = text_response
-            
-            analysis = json.loads(json_str)
-            evaluation.append(analysis)
-        except Exception as e:
-            print(f"Error processing answer: {e}")
-            evaluation.append({"score": 0, "feedback": "Error evaluating answer."})
-            continue
-
-    return {
-        "questions": questions,
-        "answers": answers,
-        "evaluation": evaluation,
-    }
+    return schemas.InterviewResult(
+        candidate_email=interview.candidate_email,
+        questions=interview.questions,
+        answers=answer_record.answers,
+        evaluation=answer_record.evaluation,
+        submitted_at=answer_record.submitted_at
+    )

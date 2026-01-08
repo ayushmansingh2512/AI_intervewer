@@ -87,10 +87,45 @@ conf = ConnectionConfig(
 )
 
 async def send_otp_email(email: str, otp: str):
+    current_year = datetime.now().year
+    
+    body = f"""
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
+      <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background-color: #1A1817; padding: 25px; text-align: center;">
+           <h1 style="color: #D4A574; margin: 0; font-size: 24px; letter-spacing: 2px; font-weight: 300;">NOODLE LAB</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px; color: #333333; text-align: center;">
+          <h2 style="color: #1A1817; margin-top: 0; font-weight: 400; font-size: 22px;">Verification Code</h2>
+          <p style="font-size: 15px; line-height: 1.6; color: #555555; margin-bottom: 30px;">
+            Please use the code below to verify your account or complete your login for Noodle Lab.
+          </p>
+          
+          <div style="background-color: #f0f0f0; border-radius: 8px; padding: 20px; display: inline-block; letter-spacing: 5px;">
+            <span style="font-size: 32px; font-weight: bold; color: #1A1817; font-family: monospace;">{otp}</span>
+          </div>
+
+          <p style="font-size: 14px; color: #888888; margin-top: 30px;">
+            This code will expire in 10 minutes.<br>If you didn't request this, you can safely ignore this email.
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 11px; color: #999999;">
+          &copy; {current_year} Noodle Lab.
+        </div>
+      </div>
+    </div>
+    """
+    
     message = MessageSchema(
-        subject="Your OTP for Solvithem",
+        subject="Your Verification Code - Noodle Lab",
         recipients=[email],
-        body=f"Your OTP is: {otp}",
+        body=body,
         subtype="html"
     )
     fm = FastMail(conf)

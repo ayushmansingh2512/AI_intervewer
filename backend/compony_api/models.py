@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.types import JSON
 from backend.database import Base
 from datetime import datetime
 
@@ -35,6 +35,7 @@ class Answer(Base):
     id = Column(Integer, primary_key=True, index=True)
     interview_id = Column(String, ForeignKey("interviews.interview_id"), unique=True)
     answers = Column(JSON)
+    evaluation = Column(JSON, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow)  # Timestamp when answers submitted
 
     interview = relationship("Interview", back_populates="answers")

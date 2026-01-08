@@ -38,31 +38,59 @@ def get_current_company(token: str = Depends(oauth2_scheme), db: Session = Depen
     return company
 
 async def send_interview_email(email: str, interview_link: str, company_name: str, scheduled_time: str = None, duration_minutes: int = None):
-    if scheduled_time:
-        # Email for scheduled interview
-        duration_text = f" The interview will be available for {duration_minutes // 60} hour(s)." if duration_minutes else ""
-        body = f"""
-        <p>Dear Candidate,</p>
-        <p>You have been invited to an interview with <strong>{company_name}</strong>.</p>
-        <p><strong>Scheduled Time:</strong> {scheduled_time}</p>
-        {f'<p><strong>Duration:</strong> {duration_minutes // 60} hour(s)</p>' if duration_minutes else ''}
-        <p>Please click the link below to access the interview at the scheduled time:</p>
-        <p><a href="{interview_link}" style="display: inline-block; padding: 12px 24px; background-color: #D4A574; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0;">Access Interview</a></p>
-        <p><em>Note: The interview link will only be accessible during the scheduled time window.</em></p>
-        <p>Best regards,<br>{company_name}</p>
-        """
-    else:
-        # Email for immediate interview
-        body = f"""
-        <p>Dear Candidate,</p>
-        <p>You have been invited to an interview with <strong>{company_name}</strong>.</p>
-        <p>Please click the link below to start the interview:</p>
-        <p><a href="{interview_link}" style="display: inline-block; padding: 12px 24px; background-color: #D4A574; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0;">Start Interview</a></p>
-        <p>Best regards,<br>{company_name}</p>
-        """
+    current_year = datetime.now().year
+    
+    duration_html = ""
+    if duration_minutes:
+        hours = duration_minutes // 60
+        minutes = duration_minutes % 60
+        duration_str = f"{hours}h {minutes}m" if minutes else f"{hours}h"
+        duration_html = f'<p style="margin: 5px 0;"><strong>⏳ Duration:</strong> {duration_str}</p>'
+
+    time_display = scheduled_time if scheduled_time else "Immediate Start"
+    
+    body = f"""
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background-color: #1A1817; padding: 30px; text-align: center;">
+           <h1 style="color: #D4A574; margin: 0; font-size: 28px; letter-spacing: 2px; font-weight: 300;">NOODLE LAB</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px; color: #333333;">
+          <h2 style="color: #1A1817; margin-top: 0; font-weight: 400; font-size: 24px;">Interview Invitation</h2>
+          <p style="font-size: 16px; line-height: 1.6; color: #555555;">Dear Candidate,</p>
+          <p style="font-size: 16px; line-height: 1.6; color: #555555;">You have been invited to an interview with <strong style="color: #1A1817;">{company_name}</strong>. We are verified and powered by Noodle Lab's AI infrastructure.</p>
+          
+          <!-- Schedule Box -->
+          <div style="background-color: #f9f9f9; border-left: 4px solid #D4A574; padding: 20px; margin: 25px 0; border-radius: 4px;">
+             <p style="margin: 5px 0; font-size: 16px;"><strong>📅 Scheduled Time:</strong> {time_display}</p>
+             {duration_html}
+          </div>
+
+          <p style="font-size: 16px; line-height: 1.6; color: #555555;">Please prioritize a quiet environment and good internet connection. Click the button below when you are ready to begin.</p>
+
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="{interview_link}" style="background-color: #D4A574; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block; transition: background-color 0.3s;">Join Interview</a>
+          </div>
+          
+          <p style="font-size: 13px; color: #888888; margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 20px;">
+            <em>Note: The interview link is unique to you. Please do not share it with others.</em>
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #999999;">
+          &copy; {current_year} Noodle Lab. All rights reserved.
+        </div>
+      </div>
+    </div>
+    """
     
     message = MessageSchema(
-        subject=f"Invitation to Interview with {company_name}",
+        subject=f"Interview Invitation: {company_name}",
         recipients=[email],
         body=body,
         subtype="html"
@@ -74,28 +102,68 @@ async def send_suspicious_activity_email(company_email: str, candidate_email: st
     from fastapi_mail import MessageType
     import base64
     
-    body = f"""
-    <p>Dear Company,</p>
-    <p>Suspicious activity was detected during the interview for candidate <strong>{candidate_email}</strong> (Interview ID: <strong>{interview_id}</strong>).</p>
-    <p>Reason: <strong>{reason}</strong></p>
-    <p>Please review the interview recording if available.</p>
-    """
+    current_year = datetime.now().year
     
-
-
+    screenshot_html = ""
     if screenshot_bytes:
-        # Convert screenshot to base64 for embedding in email
-        print(f"Embedding screenshot of size: {len(screenshot_bytes)} bytes")
         try:
             screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
-            body += f"""
-            <p><strong>Screenshot at time of detection:</strong></p>
-            <img src="data:image/jpeg;base64,{screenshot_base64}" alt="Screenshot" style="max-width: 600px; border: 2px solid #ccc; border-radius: 8px;"/>
+            screenshot_html = f"""
+            <div style="margin-top: 25px; text-align: center;">
+                <p style="font-weight: bold; color: #1A1817; margin-bottom: 10px;">Screenshot at time of detection:</p>
+                <img src="data:image/jpeg;base64,{screenshot_base64}" alt="Suspicious Activity Screenshot" style="max-width: 100%; border: 3px solid #e74c3c; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"/>
+                <p style="font-size: 12px; color: #888888; margin-top: 5px;">(Image also attached)</p>
+            </div>
             """
         except Exception as e:
             print(f"Error encoding screenshot: {e}")
-            body += f"<p>Error attaching screenshot: {e}</p>"
-            
+            screenshot_html = f"<p style='color: red; font-size: 12px;'>Error loading screenshot preview: {e}</p>"
+
+    body = f"""
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #e74c3c;">
+        
+        <!-- Header -->
+        <div style="background-color: #1A1817; padding: 25px; text-align: center;">
+           <h1 style="color: #D4A574; margin: 0; font-size: 24px; letter-spacing: 2px; font-weight: 300;">NOODLE LAB</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px; color: #333333;">
+          <h2 style="color: #e74c3c; margin-top: 0; font-weight: 600; font-size: 22px; display: flex; align-items: center;">
+            ⚠️ Suspicious Activity Detected
+          </h2>
+          
+          <p style="font-size: 15px; line-height: 1.6; color: #555555; margin-bottom: 20px;">
+            Our AI validation system flagged a potential integrity issue during an active interview session.
+          </p>
+
+          <!-- Warning Box -->
+          <div style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <p style="margin: 0; color: #c53030; font-weight: bold; font-size: 16px;">Reason: {reason}</p>
+          </div>
+          
+          <!-- Details -->
+          <div style="background-color: #fafafa; padding: 20px; border-radius: 8px; border-left: 3px solid #1A1817;">
+             <p style="margin: 5px 0; font-size: 14px;"><strong>👤 Candidate:</strong> {candidate_email}</p>
+             <p style="margin: 5px 0; font-size: 14px;"><strong>🆔 Interview ID:</strong> {interview_id}</p>
+          </div>
+
+          {screenshot_html}
+
+          <p style="font-size: 14px; line-height: 1.6; color: #555555; margin-top: 30px;">
+             We recommend reviewing the full interview recording for further verification.
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 11px; color: #999999;">
+          &copy; {current_year} Noodle Lab Safety System.
+        </div>
+      </div>
+    </div>
+    """
+    
     attachments = []
     if screenshot_bytes:
         try:
@@ -104,17 +172,11 @@ async def send_suspicious_activity_email(company_email: str, candidate_email: st
             with os.fdopen(fd, 'wb') as tmp:
                 tmp.write(screenshot_bytes)
             attachments.append(path)
-            body += "<p><em>The screenshot has also been attached to this email.</em></p>"
         except Exception as e:
             print(f"Error creating attachment: {e}")
 
-    body += """
-    <p>Regards,</p>
-    <p>Your Interview Platform</p>
-    """
-    
     message = MessageSchema(
-        subject=f"Suspicious Activity Detected During Interview {interview_id}",
+        subject=f"⚠️ Alert: Suspicious Activity - {candidate_email}",
         recipients=[company_email],
         body=body,
         subtype=MessageType.html,

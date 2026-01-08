@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, validator
-from typing import Optional, List
+from typing import Optional, List, Any
+from datetime import datetime
 
 class CompanyCreate(BaseModel):
     email: EmailStr
@@ -49,9 +50,22 @@ class Interview(BaseModel):
     company_id: int
     interview_id: str
     interview_type: str
+    questions: List[Any]
+    scheduled_start_time: Optional[datetime] = None
+    duration_minutes: Optional[int] = None
 
     class Config:
         from_attributes = True
 
 class AnswerCreate(BaseModel):
     answers: List[str]
+
+class InterviewResult(BaseModel):
+    candidate_email: EmailStr
+    questions: List[str]
+    answers: List[str]
+    evaluation: List[Any]
+    submitted_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
