@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Lottie from 'lottie-react';
-import ghostAnimation from '../assets/images/ghost.json';
+import ghostAnimation from '../assets/images/Ghost.json';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
