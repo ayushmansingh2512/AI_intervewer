@@ -13,8 +13,8 @@ const Sidebar = () => {
   const iconClasses = ({ isActive }) => `
     flex items-center justify-center w-12 h-12 rounded-lg no-underline
     transition-all duration-200
-    ${isActive 
-      ? 'bg-[#D97757] text-white' 
+    ${isActive
+      ? 'bg-[#D97757] text-white'
       : 'text-[#3D3D3A] hover:bg-[#E3DACC]'
     }
   `;
@@ -58,12 +58,12 @@ const Sidebar = () => {
           <div className={tooltipClasses}>Voice Interview</div>
         </div>
 
-        <div className="group relative">
+        {/* <div className="group relative">
           <NavLink to="/dashboard/cv-maker" className={iconClasses}>
             <FileSignature size={22} strokeWidth={1.5} />
           </NavLink>
           <div className={tooltipClasses}>CV Maker</div>
-        </div>
+        </div> */}
       </nav>
 
       {/* Logout Button - Bottom */}
