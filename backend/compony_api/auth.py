@@ -3,12 +3,13 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend.compony_api import crud, schemas
 from backend.database import get_db
-from backend.auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_password, get_password_hash, send_otp_email, FastMail, MessageSchema, conf
+from backend.auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_password, get_password_hash, send_otp_email, RESEND_FROM_EMAIL
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
 import os
 import tempfile
+import resend
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="company/token")
 
@@ -89,17 +90,16 @@ async def send_interview_email(email: str, interview_link: str, company_name: st
     </div>
     """
     
-    message = MessageSchema(
-        subject=f"Interview Invitation: {company_name}",
-        recipients=[email],
-        body=body,
-        subtype="html"
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    params = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [email],
+        "subject": f"Interview Invitation: {company_name}",
+        "html": body,
+    }
+    
+    resend.Emails.send(params)
 
 async def send_suspicious_activity_email(company_email: str, candidate_email: str, interview_id: str, reason: str, screenshot_bytes: bytes = None):
-    from fastapi_mail import MessageType
     import base64
     
     current_year = datetime.now().year
@@ -164,32 +164,16 @@ async def send_suspicious_activity_email(company_email: str, candidate_email: st
     </div>
     """
     
-    attachments = []
-    if screenshot_bytes:
-        try:
-            # Create a temp file for attachment
-            fd, path = tempfile.mkstemp(suffix=".jpg")
-            with os.fdopen(fd, 'wb') as tmp:
-                tmp.write(screenshot_bytes)
-            attachments.append(path)
-        except Exception as e:
-            print(f"Error creating attachment: {e}")
-
-    message = MessageSchema(
-        subject=f"⚠️ Alert: Suspicious Activity - {candidate_email}",
-        recipients=[company_email],
-        body=body,
-        subtype=MessageType.html,
-        attachments=attachments
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    # Resend doesn't support attachments in the same way, so we'll skip screenshot attachment for now
+    # The screenshot is already embedded in the HTML as base64
     
-    # Clean up temp files
-    for path in attachments:
-        try:
-            os.remove(path)
-        except Exception as e:
-            print(f"Error removing temp file {path}: {e}")
+    params = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [company_email],
+        "subject": f"⚠️ Alert: Suspicious Activity - {candidate_email}",
+        "html": body,
+    }
+    
+    resend.Emails.send(params)
 
 

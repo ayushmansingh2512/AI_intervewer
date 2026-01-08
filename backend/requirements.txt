@@ -2,8 +2,10 @@
 fastapi
 uvicorn
 python-multipart
-python-dotenv
-requests
+opencv-python-headless
+google-generativeai
+resend
+pydub
 aiofiles
 email-validator
 
@@ -26,7 +28,7 @@ opencv-python
 
 
 # Email
-fastapi-mail<2.0.0
+resend
 
 # File Processing & Utils
 PyPDF2

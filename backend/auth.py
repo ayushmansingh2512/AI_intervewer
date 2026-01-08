@@ -1,6 +1,5 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
@@ -14,6 +13,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend import crud, schemas
 from backend.database import get_db
+import resend
 
 
 load_dotenv()
@@ -73,25 +73,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Email Configuration
-conf = ConnectionConfig(
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM = os.getenv("MAIL_FROM"),
-    MAIL_PORT = int(os.getenv("MAIL_PORT")),
-    MAIL_SERVER = os.getenv("MAIL_SERVER"),
-    MAIL_STARTTLS = os.getenv("MAIL_STARTTLS") == "True",
-    MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS") == "True",
-    USE_CREDENTIALS = True,
-    VALIDATE_CERTS = True
-)
+# Resend Email Configuration
+resend.api_key = os.getenv("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 async def send_otp_email(email: str, otp: str):
     current_year = datetime.now().year
     
     body = f"""
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
-      <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
         
         <!-- Header -->
         <div style="background-color: #1A1817; padding: 25px; text-align: center;">
@@ -122,14 +113,14 @@ async def send_otp_email(email: str, otp: str):
     </div>
     """
     
-    message = MessageSchema(
-        subject="Your Verification Code - Noodle Lab",
-        recipients=[email],
-        body=body,
-        subtype="html"
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    params = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [email],
+        "subject": "Your Verification Code - Noodle Lab",
+        "html": body,
+    }
+    
+    resend.Emails.send(params)
 
 # Google OAuth2 Flow
 def get_google_flow():

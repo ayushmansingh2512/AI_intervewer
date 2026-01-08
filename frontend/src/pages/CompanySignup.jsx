@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import "./styles/Theme.css";
 import { API_URL } from "../config";
+import GoogleIcon from "../assets/images/icons8-google-50.png";
 
 function CompanySignup() {
   const [email, setEmail] = useState("");
@@ -109,7 +110,7 @@ function CompanySignup() {
 
         <button className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg flex items-center justify-center hover-ele transition">
           <img
-            src="src/assets/images/icons8-google-50.png"
+            src={GoogleIcon}
             alt="Google Logo"
             className="w-6 h-6 mr-2"
           />

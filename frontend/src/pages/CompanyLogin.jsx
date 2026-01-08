@@ -4,6 +4,7 @@ import axios from "axios";
 import "./styles/Theme.css";
 import toast from "react-hot-toast";
 import { API_URL } from '../config';
+import GoogleIcon from "../assets/images/icons8-google-50.png";
 
 function CompanyLogin() {
   const navigate = useNavigate();
@@ -137,7 +138,7 @@ function CompanyLogin() {
           className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg transition flex items-center justify-center hover-ele"
         >
           <img
-            src="src/assets/images/icons8-google-50.png"
+            src={GoogleIcon}
             alt="Google Logo"
             className="w-6 h-6 mr-2"
           />
