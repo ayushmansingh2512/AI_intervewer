@@ -213,7 +213,7 @@ const CompanyInterviewResults = () => {
             Select an interview to view the results.
           </p>
           <div className="space-y-4">
-            {interviews.map(interview => (
+            {[...interviews].reverse().map(interview => (
               <Link to={`/company/interview-results/${interview.interview_id}`} key={interview.id} className="block bg-white rounded-lg p-6 shadow-sm border border-[#E5E1DC] hover:border-[#D4A574] transition-all">
                 <p className="font-semibold text-[#1A1817]">{interview.candidate_email}</p>
                 <p className="text-sm text-[#6B6662]">Interview ID: {interview.interview_id}</p>
