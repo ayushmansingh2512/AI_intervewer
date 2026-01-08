@@ -11,6 +11,15 @@ import google.generativeai as genai
 # Load env vars immediately
 load_dotenv()
 
+import sys
+from pathlib import Path
+
+# Add the parent directory (project root) to sys.path
+# This allows 'from backend import ...' to work even if the CWD is /app/backend (Render default)
+current_dir = Path(__file__).resolve().parent
+project_root = current_dir.parent
+sys.path.append(str(project_root))
+
 from backend import model, schemas
 from backend.database import engine
 
