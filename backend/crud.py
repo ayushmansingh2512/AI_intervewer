@@ -26,7 +26,8 @@ def create_google_user(db: Session, user_info: dict):
         email=user_info["email"],
         first_name=user_info.get("given_name"),
         last_name=user_info.get("family_name"),
-        is_google_user=True
+        is_google_user=True,
+        is_verified=True # Google users are verified by email
     )
     db.add(db_user)
     db.commit()

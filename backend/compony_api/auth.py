@@ -7,6 +7,8 @@ from backend.auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, cre
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+import os
+import tempfile
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="company/token")
 
@@ -17,16 +19,22 @@ def get_current_company(token: str = Depends(oauth2_scheme), db: Session = Depen
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        print(f"DEBUG: Verifying company token: {token[:10]}...") 
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+        print(f"DEBUG: Token email sub: {email}")
         if email is None:
+            print("DEBUG: Email is None in payload")
             raise credentials_exception
         token_data = schemas.TokenData(email=email)
-    except JWTError:
+    except JWTError as e:
+        print(f"DEBUG: JWT Decode Error: {e}")
         raise credentials_exception
     company = crud.get_company_by_email(db, email=token_data.email)
     if company is None:
+        print(f"DEBUG: Company not found for email: {token_data.email}")
         raise credentials_exception
+    print(f"DEBUG: Company verified: {company.email}")
     return company
 
 async def send_interview_email(email: str, interview_link: str, company_name: str, scheduled_time: str = None, duration_minutes: int = None):
@@ -73,14 +81,33 @@ async def send_suspicious_activity_email(company_email: str, candidate_email: st
     <p>Please review the interview recording if available.</p>
     """
     
+
+
     if screenshot_bytes:
         # Convert screenshot to base64 for embedding in email
-        screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
-        body += f"""
-        <p><strong>Screenshot at time of detection:</strong></p>
-        <img src="data:image/jpeg;base64,{screenshot_base64}" alt="Screenshot" style="max-width: 600px; border: 2px solid #ccc; border-radius: 8px;"/>
-        """
-    
+        print(f"Embedding screenshot of size: {len(screenshot_bytes)} bytes")
+        try:
+            screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
+            body += f"""
+            <p><strong>Screenshot at time of detection:</strong></p>
+            <img src="data:image/jpeg;base64,{screenshot_base64}" alt="Screenshot" style="max-width: 600px; border: 2px solid #ccc; border-radius: 8px;"/>
+            """
+        except Exception as e:
+            print(f"Error encoding screenshot: {e}")
+            body += f"<p>Error attaching screenshot: {e}</p>"
+            
+    attachments = []
+    if screenshot_bytes:
+        try:
+            # Create a temp file for attachment
+            fd, path = tempfile.mkstemp(suffix=".jpg")
+            with os.fdopen(fd, 'wb') as tmp:
+                tmp.write(screenshot_bytes)
+            attachments.append(path)
+            body += "<p><em>The screenshot has also been attached to this email.</em></p>"
+        except Exception as e:
+            print(f"Error creating attachment: {e}")
+
     body += """
     <p>Regards,</p>
     <p>Your Interview Platform</p>
@@ -90,8 +117,17 @@ async def send_suspicious_activity_email(company_email: str, candidate_email: st
         subject=f"Suspicious Activity Detected During Interview {interview_id}",
         recipients=[company_email],
         body=body,
-        subtype=MessageType.html
+        subtype=MessageType.html,
+        attachments=attachments
     )
     fm = FastMail(conf)
     await fm.send_message(message)
+    
+    # Clean up temp files
+    for path in attachments:
+        try:
+            os.remove(path)
+        except Exception as e:
+            print(f"Error removing temp file {path}: {e}")
+
 

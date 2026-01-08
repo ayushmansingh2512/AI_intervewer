@@ -19,6 +19,19 @@ def create_company(db: Session, company: schemas.CompanyCreate):
     db.commit()
     db.refresh(db_company)
     return db_company
+    
+def create_google_company(db: Session, user_info: dict):
+    company_name = user_info.get("name") or user_info.get("given_name") or "Company Name"
+    db_company = models.Company(
+        email=user_info["email"],
+        company_name=company_name, # Use Full Name or Given Name or fallback as Company Name
+        hashed_password=None,
+        is_verified=True # Google users are verified by email
+    )
+    db.add(db_company)
+    db.commit()
+    db.refresh(db_company)
+    return db_company
 
 def verify_company(db: Session, email: str):
     db_company = get_company_by_email(db, email)

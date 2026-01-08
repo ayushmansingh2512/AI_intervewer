@@ -9,26 +9,37 @@ const GoogleCallback = () => {
 
     useEffect(() => {
         const token = searchParams.get('token');
+        const role = searchParams.get('role');
+
         if (token) {
             localStorage.setItem('token', token);
+            if (role) {
+                localStorage.setItem('role', role);
+            }
 
-            // Fetch user info to get the name
-            axios.get('http://localhost:8000/users/me', {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-                .then(response => {
-                    const { first_name } = response.data;
-                    if (first_name) {
-                        localStorage.setItem('first_name', first_name);
-                    }
-                    toast.success('Successfully logged in with Google!');
-                    navigate('/dashboard');
+            if (role === 'company') {
+                toast.success('Successfully logged in as Company!');
+                navigate('/company/dashboard');
+            } else {
+                // Fetch user info to get the name (Talent flow)
+                axios.get('http://127.0.0.1:8000/users/me', {
+                    headers: { Authorization: `Bearer ${token}` }
                 })
-                .catch(error => {
-                    console.error('Error fetching user info:', error);
-                    toast.error('Failed to fetch user profile.');
-                    navigate('/login');
-                });
+                    .then(response => {
+                        const { first_name } = response.data;
+                        if (first_name) {
+                            localStorage.setItem('first_name', first_name);
+                        }
+                        toast.success('Successfully logged in with Google!');
+                        navigate('/dashboard');
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user info:', error);
+                        // If fetching user fails, we might still be logged in, but let's warn
+                        toast.error('Failed to fetch user profile.');
+                        navigate('/login');
+                    });
+            }
         } else {
             toast.error('Login failed. No token received.');
             navigate('/login');

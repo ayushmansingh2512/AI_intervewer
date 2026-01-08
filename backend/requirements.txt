@@ -13,3 +13,11 @@ pydub
 opencv-python
 dlib
 numpy
+requests
+passlib
+python-multipart
+google-generativeai
+google-cloud-texttospeech
+PyPDF2
+python-docx
+SpeechRecognition

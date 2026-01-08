@@ -1,8 +1,9 @@
+import { NavLink, useOutletContext } from 'react-router-dom';
 import React from 'react';
-import { NavLink } from 'react-router-dom';
 
 const CompanyDashboard = () => {
-  const companyName = localStorage.getItem('company_name') || 'Company';
+  const { company } = useOutletContext();
+  const companyName = company?.company_name || 'Company';
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-[#FAF9F5] py-8 px-4">
@@ -10,7 +11,7 @@ const CompanyDashboard = () => {
         <h1 className="text-5xl font-light text-[#3D3D3A] tracking-tight">
           Welcome, <span className="text-[#D97757] font-[DM-Serif-Display]">{companyName}</span>.
         </h1>
-        
+
         <p className="text-lg text-[#6B6B68] font-medium">
           Create and manage your interviews from here.
         </p>

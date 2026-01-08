@@ -113,12 +113,16 @@ def get_google_flow():
         redirect_uri=GOOGLE_REDIRECT_URI
     )
 
-def get_google_auth_url():
+def get_google_auth_url(state: str = None):
     flow = get_google_flow()
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true'
-    )
+    kwargs = {
+        'access_type': 'offline',
+        'include_granted_scopes': 'true'
+    }
+    if state:
+        kwargs['state'] = state
+        
+    authorization_url, state = flow.authorization_url(**kwargs)
     return authorization_url
 
 def get_google_user_info(code: str):

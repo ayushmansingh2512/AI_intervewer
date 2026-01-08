@@ -76,6 +76,66 @@ const CompanyVoiceInterview = () => {
         };
     }, []);
 
+    // WebSocket Streaming for Detection
+    useEffect(() => {
+        let ws;
+        let intervalId;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const startStreaming = () => {
+            // Use the correct websocket URL matching Interview.jsx and backend routes
+            // Assuming the router is mounted at /company based on Interview.jsx
+            // But let's verify if CompanyVoiceInterview is for candidates or companies. 
+            // The route is /company/interview/... in the backend potentially?
+            // Actually, Interview.jsx uses ws://localhost:8000/company/interview/${interviewId}/stream
+            // Let's stick to what works in Interview.jsx, but verify path.
+
+            // In interview_routes.py, the endpoint is @router.websocket("/interview/{interview_id}/stream")
+            // If the router is included with prefix "/company", then it is /company/interview/...
+
+            ws = new WebSocket(`ws://localhost:8000/company/interview/${interviewId}/stream`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connection established for detection.');
+
+                intervalId = setInterval(() => {
+                    if (videoRef.current && ws.readyState === WebSocket.OPEN) {
+                        canvas.width = videoRef.current.videoWidth;
+                        canvas.height = videoRef.current.videoHeight;
+
+                        if (canvas.width > 0 && canvas.height > 0) {
+                            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob((blob) => {
+                                if (blob && ws.readyState === WebSocket.OPEN) {
+                                    ws.send(blob);
+                                }
+                            }, 'image/jpeg', 0.8); // Send as JPEG
+                        }
+                    }
+                }, 1000); // 1 FPS
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                // simple reconnect logic could go here
+                console.log('WebSocket connection closed.');
+            };
+        };
+
+        if (cameraActive) {
+            startStreaming();
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+            if (ws) ws.close();
+        };
+    }, [interviewId, cameraActive]);
+
     // Initialize Speech Recognition
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

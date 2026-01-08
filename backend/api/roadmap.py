@@ -30,7 +30,7 @@ async def generate_roadmap(request: schemas.RoadmapRequest, db: Session = Depend
                 "title": "Step 1: Foundation",
                 "description": "Description here",
                 "topics_to_study": ["Topic 1", "Topic 2"],
-                "practice_questions": ["Question 1", "Question 2"],
+                "practice_questions": ["Que stion 1", "Question 2"],
                 "resources": [
                     {{"name": "Resource Name", "url": "https://example.com"}}
                 ]
@@ -38,7 +38,8 @@ async def generate_roadmap(request: schemas.RoadmapRequest, db: Session = Depend
         ]
     }}
     
-    Include 5-7 comprehensive steps. Ensure all URLs are valid and start with https://.
+    Include 5-7 comprehensive steps. Ensure all URLs are valid and start with https://. 
+    if he ask for some thing like farmer(or any other job leagal or illeagal) you stillgive him a road jut dont gove link that time 
     """
 
     try:

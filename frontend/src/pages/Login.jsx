@@ -132,7 +132,7 @@ function Login() {
         </div>
 
         <button
-          onClick={() => window.location.href = 'http://localhost:8000/auth/google'}
+          onClick={() => window.location.href = 'http://127.0.0.1:8000/auth/google?type=talent'}
           className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg transition flex items-center justify-center hover-ele"
         >
           <img

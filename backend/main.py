@@ -33,14 +33,36 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=gemini_api_key)
 app = FastAPI()
 
-# Add CORS middleware FIRST, before any routes
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend URLs
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods including OPTIONS
-    allow_headers=["*"],  # Allow all headers
-)
+from fastapi import Response
+
+@app.middleware("http")
+async def cors_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+    print(f"DEBUG: Middleware processing request from origin: {origin}")
+    
+    # Handle preflight OPTIONS requests directly
+    if request.method == "OPTIONS":
+        print("DEBUG: Handling OPTIONS request")
+        response = Response()
+        if origin:
+            print(f"DEBUG: Setting OPTIONS ACAO to {origin}")
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+    response = await call_next(request)
+    
+    # Add CORS headers to actual response
+    if origin:
+        print(f"DEBUG: Setting Response ACAO to {origin}")
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        
+    return response
 
 # Initialize database tables on startup
 @app.on_event("startup")

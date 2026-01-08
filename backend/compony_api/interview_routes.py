@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 import uuid
 import os
@@ -183,6 +183,7 @@ async def stream(websocket: WebSocket, interview_id: str, db: Session = Depends(
                                 _, buffer = cv2.imencode('.jpg', last_frame)
                                 screenshot_bytes = buffer.tobytes()
                             
+                            print(f"Sending suspicious activity email (No face) for {interview_id}. Screenshot bytes: {len(screenshot_bytes) if screenshot_bytes else 0}")
                             await auth.send_suspicious_activity_email(
                                 company_email=db_company.email,
                                 candidate_email=db_interview.candidate_email,
@@ -206,6 +207,7 @@ async def stream(websocket: WebSocket, interview_id: str, db: Session = Depends(
                                         _, buffer = cv2.imencode('.jpg', last_frame)
                                         screenshot_bytes = buffer.tobytes()
                                     
+                                    print(f"Sending suspicious activity email (No eyes) for {interview_id}. Screenshot bytes: {len(screenshot_bytes) if screenshot_bytes else 0}")
                                     await auth.send_suspicious_activity_email(
                                         company_email=db_company.email,
                                         candidate_email=db_interview.candidate_email,
