@@ -141,7 +141,7 @@ async def submit_interview(
     evaluation_result = []
     
     # List of models to try in order of preference
-    models_to_try = ['gemini-2.0-flash', 'gemini-2.0-flash-exp']
+    models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
     
     import time
     
