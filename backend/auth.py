@@ -73,9 +73,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Resend Email Configuration
-resend.api_key = os.getenv("RESEND_API_KEY")
-RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+# SendGrid Email Configuration
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "ayushmansingh2512@gmail.com")
 
 async def send_otp_email(email: str, otp: str):
     current_year = datetime.now().year
@@ -113,14 +116,19 @@ async def send_otp_email(email: str, otp: str):
     </div>
     """
     
-    params = {
-        "from": RESEND_FROM_EMAIL,
-        "to": [email],
-        "subject": "Your Verification Code - Noodle Lab",
-        "html": body,
-    }
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=email,
+        subject="Your Verification Code - Noodle Lab",
+        html_content=body
+    )
     
-    resend.Emails.send(params)
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"SendGrid error: {e}")
+        raise
 
 # Google OAuth2 Flow
 def get_google_flow():

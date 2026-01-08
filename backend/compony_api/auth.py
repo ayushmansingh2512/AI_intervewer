@@ -3,13 +3,14 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend.compony_api import crud, schemas
 from backend.database import get_db
-from backend.auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_password, get_password_hash, send_otp_email, RESEND_FROM_EMAIL
+from backend.auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_password, get_password_hash, send_otp_email, SENDGRID_FROM_EMAIL, SENDGRID_API_KEY
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
 import os
 import tempfile
-import resend
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="company/token")
 
@@ -90,14 +91,18 @@ async def send_interview_email(email: str, interview_link: str, company_name: st
     </div>
     """
     
-    params = {
-        "from": RESEND_FROM_EMAIL,
-        "to": [email],
-        "subject": f"Interview Invitation: {company_name}",
-        "html": body,
-    }
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=email,
+        subject=f"Interview Invitation: {company_name}",
+        html_content=body
+    )
     
-    resend.Emails.send(params)
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"SendGrid error: {e}")
 
 async def send_suspicious_activity_email(company_email: str, candidate_email: str, interview_id: str, reason: str, screenshot_bytes: bytes = None):
     import base64
@@ -164,16 +169,20 @@ async def send_suspicious_activity_email(company_email: str, candidate_email: st
     </div>
     """
     
-    # Resend doesn't support attachments in the same way, so we'll skip screenshot attachment for now
+    # SendGrid doesn't support attachments in the same way, so we'll skip screenshot attachment for now
     # The screenshot is already embedded in the HTML as base64
     
-    params = {
-        "from": RESEND_FROM_EMAIL,
-        "to": [company_email],
-        "subject": f"⚠️ Alert: Suspicious Activity - {candidate_email}",
-        "html": body,
-    }
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=company_email,
+        subject=f"⚠️ Alert: Suspicious Activity - {candidate_email}",
+        html_content=body
+    )
     
-    resend.Emails.send(params)
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(f"SendGrid error: {e}")
 
 
