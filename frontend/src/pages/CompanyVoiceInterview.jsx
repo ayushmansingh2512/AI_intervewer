@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Loader, Volume2, Zap, Video, VideoOff, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Lottie from "lottie-react";
+import GhostAnimation from "../assets/images/Ghost.json";
 
 const CompanyVoiceInterview = () => {
     const { interviewId } = useParams();
@@ -31,12 +33,26 @@ const CompanyVoiceInterview = () => {
     const animationFrameRef = useRef(null);
     const recognitionRef = useRef(null);
     const audioRef = useRef(new Audio());
+    const isListeningRef = useRef(false); // Ref to track listening state without closure issues
+
+    // Sync Ref with State
+    useEffect(() => {
+        isListeningRef.current = isListening;
+        if (isListening) {
+            visualizeAudio();
+        } else {
+            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        }
+    }, [isListening]);
 
     // Fetch Interview Data
     useEffect(() => {
         const fetchInterview = async () => {
+            console.log("Fetching interview data for:", interviewId);
             try {
+                // Use localhost as requested by user and consistent with frontend
                 const response = await axios.get(`http://localhost:8000/company/interview/${interviewId}`);
+                console.log("Interview fetched successfully:", response.data);
                 setQuestions(response.data.questions);
                 setLoading(false);
             } catch (err) {
@@ -84,16 +100,7 @@ const CompanyVoiceInterview = () => {
         const ctx = canvas.getContext('2d');
 
         const startStreaming = () => {
-            // Use the correct websocket URL matching Interview.jsx and backend routes
-            // Assuming the router is mounted at /company based on Interview.jsx
-            // But let's verify if CompanyVoiceInterview is for candidates or companies. 
-            // The route is /company/interview/... in the backend potentially?
-            // Actually, Interview.jsx uses ws://localhost:8000/company/interview/${interviewId}/stream
-            // Let's stick to what works in Interview.jsx, but verify path.
-
-            // In interview_routes.py, the endpoint is @router.websocket("/interview/{interview_id}/stream")
-            // If the router is included with prefix "/company", then it is /company/interview/...
-
+            // Use localhost for consistency
             ws = new WebSocket(`ws://localhost:8000/company/interview/${interviewId}/stream`);
 
             ws.onopen = () => {
@@ -189,7 +196,7 @@ const CompanyVoiceInterview = () => {
         setIsSpeaking(true);
 
         try {
-            // Try Google Cloud TTS first
+            // Try gTTS (using localhost)
             const response = await axios.post('http://localhost:8000/tts', { text }, {
                 responseType: 'blob'
             });
@@ -252,7 +259,7 @@ const CompanyVoiceInterview = () => {
             source.connect(analyserRef.current);
 
             recognitionRef.current?.start();
-            visualizeAudio();
+            // visualizeAudio is now triggered by useEffect when isListeningRef becomes true
         } catch (error) {
             console.error('Error accessing microphone:', error);
             toast.error('Microphone access denied.');
@@ -263,18 +270,24 @@ const CompanyVoiceInterview = () => {
         if (!analyserRef.current) return;
         const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
         analyserRef.current.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        setAudioLevel(Math.min(average / 255, 1));
 
-        if (isListening) {
+        // Calculate average volume
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+        // Boost sensitivity: multiply by 2.5 to make bars react more to lower volumes
+        // Clamp at 1.0
+        const boostedLevel = Math.min((average / 255) * 2.5, 1);
+
+        setAudioLevel(boostedLevel);
+
+        if (isListeningRef.current) {
             animationFrameRef.current = requestAnimationFrame(visualizeAudio);
         }
     };
 
     const stopListening = () => {
         if (recognitionRef.current) recognitionRef.current.stop();
-        setIsListening(false);
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        // State update will trigger useEffect to stop animation
     };
 
     const handleNext = async () => {
@@ -339,22 +352,13 @@ const CompanyVoiceInterview = () => {
                 <div className="bg-white rounded-2xl p-12 shadow-lg border border-[#E5E1DC]">
                     {/* AI Avatar / Speaker */}
                     <div className="mb-12 flex justify-center">
-                        {isSpeaking ? (
-                            <div className="flex gap-2 items-end h-16">
-                                {[0, 1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="w-2 bg-gradient-to-t from-[#D4A574] to-[#E5C7A0] rounded-full"
-                                        style={{
-                                            height: `${30 + Math.random() * 40}px`,
-                                            animation: `wave 0.5s ease-in-out infinite`
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="w-20 h-20 bg-[#F7F5F2] rounded-full flex items-center justify-center border border-[#E5E1DC]">
-                                <Volume2 className="w-8 h-8 text-[#D4A574]" />
-                            </div>
-                        )}
+                        <div className="w-64 h-64">
+                            <Lottie
+                                animationData={GhostAnimation}
+                                loop={true}
+                                className="w-full h-full"
+                            />
+                        </div>
                     </div>
 
                     {/* Question Text */}
@@ -371,7 +375,7 @@ const CompanyVoiceInterview = () => {
                                 <div className="flex items-end justify-center gap-1 h-16 mb-6">
                                     {Array.from({ length: 20 }).map((_, i) => (
                                         <div key={i} className="w-1.5 bg-gradient-to-t from-[#10B981] to-[#34D399] rounded-full transition-all duration-75"
-                                            style={{ height: `${Math.max(4, audioLevel * (Math.random() * 60 + 10))}px` }}
+                                            style={{ height: `${Math.max(4, audioLevel * (Math.random() * 120 + 30))}px` }}
                                         />
                                     ))}
                                 </div>
