@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./styles/Theme.css";
 import toast from "react-hot-toast";
+import { API_URL } from '../config';
 
 function Login() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ function Login() {
     setLoading(true);// loading status = loading
 
     try {
-      const response = await axios.post("http://localhost:8000/login", {
+      const response = await axios.post(`${API_URL}/login`, {
         email,
         password,
       });
@@ -132,7 +133,7 @@ function Login() {
         </div>
 
         <button
-          onClick={() => window.location.href = 'http://127.0.0.1:8000/auth/google?type=talent'}
+          onClick={() => window.location.href = `${API_URL}/auth/google?type=talent`}
           className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg transition flex items-center justify-center hover-ele"
         >
           <img

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL } from '../config';
 
 const CompanyProtectedRoute = () => {
   const [company, setCompany] = useState(null);
@@ -12,7 +13,7 @@ const CompanyProtectedRoute = () => {
     const fetchCompany = async () => {
       if (token) {
         try {
-          const response = await axios.get('http://127.0.0.1:8000/company/me', {
+          const response = await axios.get(`${API_URL}/company/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setCompany(response.data);

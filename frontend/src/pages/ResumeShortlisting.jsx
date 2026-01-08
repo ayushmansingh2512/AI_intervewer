@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL } from '../config';
 
 const ResumeShortlisting = () => {
   const [files, setFiles] = useState([]);
@@ -56,7 +57,7 @@ const ResumeShortlisting = () => {
     formData.append('job_description', jobDescription);
 
     try {
-      const response = await axios.post('http://localhost:8000/company/shortlist-resumes', formData, {
+      const response = await axios.post(`${API_URL}/company/shortlist-resumes`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`,

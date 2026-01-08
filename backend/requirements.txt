@@ -23,7 +23,7 @@ google-auth-oauthlib
 google-generativeai
 numpy
 opencv-python
-dlib
+
 
 # Email
 fastapi-mail<2.0.0

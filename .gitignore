@@ -1,0 +1,29 @@
+# General
+.DS_Store
+.vscode/
+.idea/
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+instance/
+.pytest_cache/
+coverage.xml
+*.egg-info/
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+frontend/.env
+frontend/.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Generated
+Thumbs.db

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL } from '../config';
 import { motion } from 'framer-motion';
 
 const ClockLoader = () => {
@@ -111,7 +112,7 @@ const CreateCompanyInterview = () => {
   const handleGenerateQuestions = async () => {
     setGenerating(true);
     try {
-      const response = await axios.post('http://localhost:8000/generate-questions', aiFormData);
+      const response = await axios.post(`${API_URL}/generate-questions`, aiFormData);
       if (response.data) {
         const generatedQuestions = response.data.map(q => typeof q === 'object' ? q.question : q).join('\n');
         setFormData({ ...formData, questions: generatedQuestions });
@@ -152,7 +153,7 @@ const CreateCompanyInterview = () => {
 
       payload.interview_type = formData.interview_type;
 
-      const response = await axios.post('http://localhost:8000/company/create-interview', payload, {
+      const response = await axios.post(`${API_URL}/company/create-interview`, payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         }

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL } from '../config';
 
 const GoogleCallback = () => {
     const [searchParams] = useSearchParams();
@@ -22,7 +23,7 @@ const GoogleCallback = () => {
                 navigate('/company/dashboard');
             } else {
                 // Fetch user info to get the name (Talent flow)
-                axios.get('http://127.0.0.1:8000/users/me', {
+                axios.get(`${API_URL}/users/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
                     .then(response => {

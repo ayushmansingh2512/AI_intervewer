@@ -5,6 +5,7 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Send } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Dashboard = () => {
   const firstName = localStorage.getItem('first_name') || 'Guest';
@@ -13,7 +14,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const roadmapRef = useRef();
-  
+
   const [isGhostHovered, setIsGhostHovered] = useState(false);
 
   const handleGenerateRoadmap = async () => {
@@ -21,12 +22,12 @@ const Dashboard = () => {
       setError('Please enter your goal');
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
-      const response = await axios.post('http://localhost:8000/roadmap/generate-roadmap', { query }, { timeout: 120000 });
+      const response = await axios.post(`${API_URL}/roadmap/generate-roadmap`, { query }, { timeout: 120000 });
       setRoadmap(response.data);
     } catch (error) {
       const errMsg = error.response?.data?.detail || error.message || 'Failed to generate roadmap';
@@ -44,30 +45,30 @@ const Dashboard = () => {
         useCORS: true,
         logging: false
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
-      
+
       const imgWidth = 210;
       const pageHeight = 295;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
-      
+
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-      
+
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      
+
       pdf.save('roadmap.pdf');
     } catch (error) {
       console.error('Error saving PDF:', error);
@@ -78,8 +79,8 @@ const Dashboard = () => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-screen bg-[#FAF9F5] py-8 px-4">
       <div className="text-center flex flex-col items-center gap-6 w-full">
-        
-        <div 
+
+        <div
           className="mt-8 w-64 h-64 relative"
           onMouseEnter={() => setIsGhostHovered(true)}
           onMouseLeave={() => setIsGhostHovered(false)}
@@ -101,7 +102,7 @@ const Dashboard = () => {
         <h1 className="text-5xl font-light text-[#3D3D3A] tracking-tight">
           Good afternoon, <span className="text-[#D97757] font-[DM-Serif-Display]">{firstName}</span>.
         </h1>
-        
+
         <p className="text-lg text-[#6B6B68] font-medium">
           Ready to prepare for your interview?
         </p>
@@ -135,7 +136,7 @@ const Dashboard = () => {
               )}
             </button>
           </div>
-          
+
           {error && (
             <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               {error}
@@ -146,14 +147,14 @@ const Dashboard = () => {
         {roadmap && (
           <div ref={roadmapRef} className="mt-8 p-8 border border-gray-300 rounded-lg bg-white w-full max-w-2xl">
             <h2 className="text-3xl font-bold mb-6 text-[#3D3D3A]">{roadmap.title}</h2>
-            
+
             {roadmap.steps.map((step, index) => (
               <div key={index} className="mb-8 pb-6 border-b border-gray-200 last:border-b-0">
                 <h3 className="text-2xl font-semibold text-[#D97757] mb-2">
                   {step.title}
                 </h3>
                 <p className="text-gray-700 mb-4">{step.description}</p>
-                
+
                 <div className="mb-4">
                   <h4 className="text-lg font-semibold text-gray-800 mb-2">Topics to Study:</h4>
                   <ul className="list-disc list-inside space-y-1">
@@ -162,7 +163,7 @@ const Dashboard = () => {
                     ))}
                   </ul>
                 </div>
-                
+
                 <div className="mb-4">
                   <h4 className="text-lg font-semibold text-gray-800 mb-2">Practice Questions:</h4>
                   <ul className="list-disc list-inside space-y-1">
@@ -171,16 +172,16 @@ const Dashboard = () => {
                     ))}
                   </ul>
                 </div>
-                
+
                 <div>
                   <h4 className="text-lg font-semibold text-gray-800 mb-2">Resources:</h4>
                   <ul className="list-disc list-inside space-y-1">
                     {step.resources?.map((resource, i) => (
                       <li key={i}>
-                        <a 
-                          href={resource.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
                           {resource.name}
@@ -191,7 +192,7 @@ const Dashboard = () => {
                 </div>
               </div>
             ))}
-            
+
             <button
               className="mt-6 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition"
               onClick={handleSaveAsPdf}

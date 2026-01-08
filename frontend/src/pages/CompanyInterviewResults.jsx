@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { Download } from 'lucide-react';
+import { API_URL } from '../config';
 
 const CompanyInterviewResults = () => {
   const { interviewId } = useParams();
@@ -17,7 +18,7 @@ const CompanyInterviewResults = () => {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/company/interview-results/${interviewId}`, {
+        const response = await axios.get(`${API_URL}/company/interview-results/${interviewId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           }
@@ -33,7 +34,7 @@ const CompanyInterviewResults = () => {
 
     const fetchInterviews = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/company/interviews', {
+        const response = await axios.get(`${API_URL}/company/interviews`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           }

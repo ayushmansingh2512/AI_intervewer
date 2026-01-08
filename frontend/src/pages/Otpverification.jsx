@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { API_URL } from '../config';
 import axios from "axios";
 import "./styles/Theme.css";
 
@@ -67,13 +68,13 @@ function OtpVerification() {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     const newOtp = pastedData.split("");
-    
+
     while (newOtp.length < 6) {
       newOtp.push("");
     }
-    
+
     setOtp(newOtp);
-    
+
     if (pastedData.length === 6) {
       verifyOtp(pastedData);
     } else if (pastedData.length > 0) {
@@ -84,13 +85,13 @@ function OtpVerification() {
   const verifyOtp = async (otpValue) => {
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/verify-otp", {
+      const response = await axios.post(`${API_URL}/verify-otp`, {
         email,
         otp: otpValue,
       });
 
       if (response.status === 200) {
-        
+
         toast.success("OTP verified successfully!");
         setTimeout(() => {
           navigate("/welcome");
@@ -99,7 +100,8 @@ function OtpVerification() {
     } catch (error) {
       if (error.response && error.response.data && error.response.data.detail) {
         toast.error(error.response.data.detail);
-      } else {e
+      } else {
+        e
         toast.error("An unexpected error occurred. Please try again.");
       }
       setOtp(new Array(6).fill(""));
@@ -113,7 +115,7 @@ function OtpVerification() {
   const handleResendOtp = async () => {
     setResendLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/signup", {
+      const response = await axios.post(`${API_URL}/signup`, {
         email,
       });
 

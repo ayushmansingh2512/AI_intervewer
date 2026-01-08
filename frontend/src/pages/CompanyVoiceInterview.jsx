@@ -5,6 +5,7 @@ import { Loader, Volume2, Zap, Video, VideoOff, AlertCircle } from 'lucide-react
 import toast from 'react-hot-toast';
 import Lottie from "lottie-react";
 import GhostAnimation from "../assets/images/Ghost.json";
+import { API_URL, WS_URL } from '../config';
 
 const CompanyVoiceInterview = () => {
     const { interviewId } = useParams();
@@ -51,7 +52,7 @@ const CompanyVoiceInterview = () => {
             console.log("Fetching interview data for:", interviewId);
             try {
                 // Use localhost as requested by user and consistent with frontend
-                const response = await axios.get(`http://localhost:8000/company/interview/${interviewId}`);
+                const response = await axios.get(`${API_URL}/company/interview/${interviewId}`);
                 console.log("Interview fetched successfully:", response.data);
                 setQuestions(response.data.questions);
                 setLoading(false);
@@ -101,7 +102,7 @@ const CompanyVoiceInterview = () => {
 
         const startStreaming = () => {
             // Use localhost for consistency
-            ws = new WebSocket(`ws://localhost:8000/company/interview/${interviewId}/stream`);
+            ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
 
             ws.onopen = () => {
                 console.log('WebSocket connection established for detection.');
@@ -197,7 +198,7 @@ const CompanyVoiceInterview = () => {
 
         try {
             // Try gTTS (using localhost)
-            const response = await axios.post('http://localhost:8000/tts', { text }, {
+            const response = await axios.post(`${API_URL}/tts`, { text }, {
                 responseType: 'blob'
             });
 
@@ -306,7 +307,7 @@ const CompanyVoiceInterview = () => {
             // Submit Interview
             setProcessingAnswer(true);
             try {
-                await axios.post(`http://localhost:8000/company/interview/${interviewId}/submit`, {
+                await axios.post(`${API_URL}/company/interview/${interviewId}/submit`, {
                     answers: newAnswers
                 });
                 toast.success("Interview Submitted!");

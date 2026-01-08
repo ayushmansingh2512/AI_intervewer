@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { API_URL } from '../config';
 import "./styles/Theme.css";
 
 function WelcomeForm() {
@@ -49,7 +50,7 @@ function WelcomeForm() {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/getting-started", {
+      const response = await axios.post(`${API_URL}/getting-started`, {
         email,
         ...formData,
       });
@@ -84,9 +85,8 @@ function WelcomeForm() {
             <input
               type="text"
               name="first_name"
-              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${
-                errors.first_name ? "border-red-500" : ""
-              }`}
+              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${errors.first_name ? "border-red-500" : ""
+                }`}
               value={formData.first_name}
               onChange={handleChange}
             />
@@ -102,9 +102,8 @@ function WelcomeForm() {
             <input
               type="text"
               name="last_name"
-              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${
-                errors.last_name ? "border-red-500" : ""
-              }`}
+              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${errors.last_name ? "border-red-500" : ""
+                }`}
               value={formData.last_name}
               onChange={handleChange}
             />
@@ -120,9 +119,8 @@ function WelcomeForm() {
             <input
               type="password"
               name="password"
-              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${
-                errors.password ? "border-red-500" : ""
-              }`}
+              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${errors.password ? "border-red-500" : ""
+                }`}
               value={formData.password}
               onChange={handleChange}
             />

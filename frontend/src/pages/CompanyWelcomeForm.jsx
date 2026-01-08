@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { API_URL } from '../config';
 import "./styles/Theme.css";
 
 function CompanyWelcomeForm() {
@@ -47,7 +48,7 @@ function CompanyWelcomeForm() {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/company/getting-started", {
+      const response = await axios.post(`${API_URL}/company/getting-started`, {
         email,
         ...formData,
       });
@@ -82,9 +83,8 @@ function CompanyWelcomeForm() {
             <input
               type="text"
               name="company_name"
-              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${
-                errors.company_name ? "border-red-500" : ""
-              }`}
+              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${errors.company_name ? "border-red-500" : ""
+                }`}
               value={formData.company_name}
               onChange={handleChange}
             />
@@ -100,9 +100,8 @@ function CompanyWelcomeForm() {
             <input
               type="password"
               name="password"
-              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${
-                errors.password ? "border-red-500" : ""
-              }`}
+              className={`w-full hover-ele focus-ele border rounded px-3 py-2 ${errors.password ? "border-red-500" : ""
+                }`}
               value={formData.password}
               onChange={handleChange}
             />

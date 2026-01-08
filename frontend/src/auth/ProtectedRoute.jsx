@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const ProtectedRoute = () => {
   const [user, setUser] = useState(null);
@@ -11,7 +12,7 @@ const ProtectedRoute = () => {
     const fetchUser = async () => {
       if (token) {
         try {
-          const response = await axios.get('http://127.0.0.1:8000/users/me', {
+          const response = await axios.get(`${API_URL}/users/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setUser(response.data);

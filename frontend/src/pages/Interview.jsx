@@ -1,44 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { motion } from 'framer-motion';
-
-const ClockLoader = () => {
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-      <div className="relative w-24 h-24 mb-8">
-        {/* Clock Face */}
-        <div className="absolute inset-0 border-4 border-[#1A1817] rounded-full" />
-
-        {/* Center Dot */}
-        <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-[#1A1817] rounded-full -translate-x-1/2 -translate-y-1/2 z-10" />
-
-        {/* Hour Hand */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-1 h-8 bg-[#1A1817] origin-bottom -translate-x-1/2 -translate-y-full rounded-full"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-        />
-
-        {/* Minute Hand */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-1 h-10 bg-[#D4A574] origin-bottom -translate-x-1/2 -translate-y-full rounded-full"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        />
-      </div>
-
-      <motion.p
-        className="text-xl font-light text-[#1A1817] tracking-widest uppercase"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        Evaluating Answers...
-      </motion.p>
-      <p className="text-sm text-[#6B6662] mt-2 font-light">This may take a moment</p>
-    </div>
-  );
-};
 
 const Interview = () => {
   const location = useLocation();
@@ -52,7 +14,6 @@ const Interview = () => {
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [eyeTrackingStatus, setEyeTrackingStatus] = useState('Initializing...');
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [accessError, setAccessError] = useState(null);
   const videoRef = useRef(null);
 
@@ -101,13 +62,7 @@ const Interview = () => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           // Explicitly play to avoid "white screen" if autoPlay fails
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current.play().catch(e => {
-              if (e.name !== 'AbortError') {
-                console.error("Error playing video:", e);
-              }
-            });
-          };
+          videoRef.current.play().catch(e => console.error("Error playing video:", e));
         }
         setEyeTrackingStatus('Eye-tracking is active.');
 
@@ -169,12 +124,10 @@ const Interview = () => {
     const newAnswers = [...answers, currentAnswer];
     setAnswers(newAnswers);
     setCurrentAnswer('');
-
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       if (interviewId) {
-        setIsSubmitting(true);
         try {
           await axios.post(`http://127.0.0.1:8000/company/interview/${interviewId}/submit`, {
             answers: newAnswers,
@@ -182,8 +135,7 @@ const Interview = () => {
           navigate(`/interview-completed`); // Redirect to a completion page
         } catch (error) {
           console.error('Failed to submit answers', error);
-          setIsSubmitting(false); // Stop loading if error
-          // Handle error appropriately (maybe show a toast)
+          // Handle error appropriately
         }
       } else {
         navigate('/dashboard/results', { state: { questions, answers: newAnswers } });
@@ -236,8 +188,6 @@ const Interview = () => {
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-6">
-      {isSubmitting && <ClockLoader />}
-
       <div className="w-full max-w-3xl relative">
         {/* Camera Video - Fixed Top Right Corner */}
         <div className="fixed top-6 right-6 z-50">
@@ -313,10 +263,10 @@ const Interview = () => {
 
             <button
               onClick={handleNextQuestion}
-              disabled={!currentAnswer.trim() || isSubmitting}
+              disabled={!currentAnswer.trim()}
               className="w-full bg-[#1A1817] text-white py-4 rounded-lg font-light tracking-wide hover:bg-[#2D2B28] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
-              {currentQuestionIndex < questions.length - 1 ? 'Next Question' : isSubmitting ? 'Evaluating...' : 'Complete Interview'}
+              {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Complete Interview'}
             </button>
           </div>
         </div>

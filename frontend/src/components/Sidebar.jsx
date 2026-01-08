@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Plus, FileText, Mic, FileSignature, LogOut } from 'lucide-react';
+import { LayoutDashboard, Plus, FileText, Mic, LogOut } from 'lucide-react';
 
 const Sidebar = () => {
   const navigate = useNavigate();
