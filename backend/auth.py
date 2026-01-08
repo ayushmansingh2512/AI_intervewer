@@ -74,11 +74,31 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 # SendGrid Email Configuration
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+import httpx
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "ayushmansingh2512@gmail.com")
+
+async def send_email_via_sendgrid(to_email: str, subject: str, html_content: str):
+    """Send email using SendGrid HTTP API directly"""
+    url = "https://api.sendgrid.com/v3/mail/send"
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "personalizations": [{"to": [{"email": to_email}]}],
+        "from": {"email": SENDGRID_FROM_EMAIL},
+        "subject": subject,
+        "content": [{"type": "text/html", "value": html_content}]
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=data)
+        if response.status_code != 202:
+            print(f"SendGrid error: {response.status_code} - {response.text}")
+            raise Exception(f"SendGrid API error: {response.status_code}")
+        print(f"Email sent successfully to {to_email}")
 
 async def send_otp_email(email: str, otp: str):
     current_year = datetime.now().year
@@ -116,20 +136,11 @@ async def send_otp_email(email: str, otp: str):
     </div>
     """
     
-    message = Mail(
-        from_email=SENDGRID_FROM_EMAIL,
-        to_emails=email,
+    await send_email_via_sendgrid(
+        to_email=email,
         subject="Your Verification Code - Noodle Lab",
         html_content=body
     )
-    
-    try:
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        response = sg.send(message)
-        print(f"SendGrid OTP email sent: {response.status_code}")
-    except Exception as e:
-        print(f"SendGrid error: {e}")
-        raise
 
 # Google OAuth2 Flow
 def get_google_flow():

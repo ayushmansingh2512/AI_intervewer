@@ -8,6 +8,7 @@ google-generativeai
 resend
 pydub
 aiofiles
+httpx
 email-validator
 
 # Database
