@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL, WS_URL } from '../config';
 
 const Interview = () => {
   const location = useLocation();
@@ -20,7 +21,7 @@ const Interview = () => {
   useEffect(() => {
     const fetchInterview = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/company/interview/${interviewId}`);
+        const response = await axios.get(`${API_URL}/company/interview/${interviewId}`);
 
         // Redirect to voice interview if type is 'voice'
         if (response.data.interview_type === 'voice') {
@@ -66,7 +67,7 @@ const Interview = () => {
         }
         setEyeTrackingStatus('Eye-tracking is active.');
 
-        ws = new WebSocket(`ws://127.0.0.1:8000/company/interview/${interviewId}/stream`);
+        ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
 
         ws.onopen = () => {
           console.log('WebSocket connection established.');
@@ -129,7 +130,7 @@ const Interview = () => {
     } else {
       if (interviewId) {
         try {
-          await axios.post(`http://127.0.0.1:8000/company/interview/${interviewId}/submit`, {
+          await axios.post(`${API_URL}/company/interview/${interviewId}/submit`, {
             answers: newAnswers,
           });
           navigate(`/interview-completed`); // Redirect to a completion page
