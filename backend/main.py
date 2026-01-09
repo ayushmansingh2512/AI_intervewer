@@ -76,6 +76,25 @@ app.include_router(company_api_router.router, prefix="/company", tags=["company"
 from backend.compony_api import tts_routes
 app.include_router(tts_routes.router, tags=["tts"])
 
+# <------------------- ROOT ENDPOINT ------------------->
+
+@app.get("/")
+async def root():
+    """Root endpoint that returns API status and information"""
+    return {
+        "status": "online",
+        "message": "AI Interviewer API is running",
+        "version": "1.0.0",
+        "documentation": "/docs",
+        "endpoints": {
+            "authentication": ["/signup", "/login", "/verify-otp", "/auth/google"],
+            "interviews": ["/generate-questions", "/evaluate-answers", "/generate-voice-interview-questions"],
+            "users": "/users",
+            "company": "/company",
+            "roadmap": "/roadmap"
+        }
+    }
+
 # <------------------- AUTH ENDPOINTS ------------------->
 
 app.post("/signup")(signup)
