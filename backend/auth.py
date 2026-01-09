@@ -13,7 +13,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend import crud, schemas
 from backend.database import get_db
-import resend
+
+
 
 
 load_dotenv()
