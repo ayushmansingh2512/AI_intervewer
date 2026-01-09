@@ -19,6 +19,9 @@ router = APIRouter()
 if os.getenv("GEMINI_API_KEY"):
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
+# Frontend URL for interview links
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
 # Initialize Face Detection
 # Use cv2.data.haarcascades to ensuring loading
 face_cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
@@ -60,7 +63,7 @@ async def create_interview(
         db.commit()
         db.refresh(db_interview)
 
-        interview_link = f"http://localhost:5173/interview/{interview_id}"
+        interview_link = f"{FRONTEND_URL}/interview/{interview_id}"
         
         # Format time for email
         scheduled_time_str = None
