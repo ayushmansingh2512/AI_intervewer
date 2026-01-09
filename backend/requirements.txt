@@ -30,7 +30,7 @@ opencv-python
 
 
 # Email
-sendgrid
+sib-api-v3-sdk
 
 # File Processing & Utils
 PyPDF2
