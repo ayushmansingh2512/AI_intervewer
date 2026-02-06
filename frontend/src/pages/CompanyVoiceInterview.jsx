@@ -22,6 +22,7 @@ const CompanyVoiceInterview = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [answers, setAnswers] = useState([]);
+    const [faceDetected, setFaceDetected] = useState(true);
 
     // Camera State
     const [cameraActive, setCameraActive] = useState(false);
@@ -131,11 +132,14 @@ const CompanyVoiceInterview = () => {
 
                 intervalId = setInterval(() => {
                     if (videoRef.current && ws.readyState === WebSocket.OPEN) {
-                        canvas.width = videoRef.current.videoWidth;
-                        canvas.height = videoRef.current.videoHeight;
+                        const targetWidth = 640;
+                        const targetHeight = (videoRef.current.videoHeight / videoRef.current.videoWidth) * targetWidth;
+
+                        canvas.width = targetWidth;
+                        canvas.height = targetHeight;
 
                         if (canvas.width > 0 && canvas.height > 0) {
-                            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(videoRef.current, 0, 0, targetWidth, targetHeight);
                             canvas.toBlob((blob) => {
                                 if (blob && ws.readyState === WebSocket.OPEN) {
                                     ws.send(blob);
@@ -146,6 +150,17 @@ const CompanyVoiceInterview = () => {
                 }, 1000); // 1 FPS
             };
 
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.status === 'active') {
+                        setFaceDetected(data.face_detected);
+                    }
+                } catch (e) {
+                    console.error("Error parsing WS message:", e);
+                }
+            };
+
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
             };
@@ -153,6 +168,7 @@ const CompanyVoiceInterview = () => {
             ws.onclose = () => {
                 // simple reconnect logic could go here
                 console.log('WebSocket connection closed.');
+                setFaceDetected(false);
             };
         };
 
@@ -366,9 +382,15 @@ const CompanyVoiceInterview = () => {
                     muted
                     className={`w-full h-full object-cover transform scale-x-[-1] transition-opacity duration-500 ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
                 />
+                {!faceDetected && cameraActive && (
+                    <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center pointer-events-none">
+                        <span className="bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse">NO FACE DETECTED</span>
+                    </div>
+                )}
+
                 <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
-                    <div className={`w-2 h-2 ${cameraActive ? 'bg-red-500' : 'bg-gray-500'} rounded-full ${cameraActive ? 'animate-pulse' : ''}`} />
-                    <span className="text-xs text-white font-medium">REC</span>
+                    <div className={`w-2 h-2 ${cameraActive ? (faceDetected ? 'bg-red-500' : 'bg-yellow-500') : 'bg-gray-500'} rounded-full ${cameraActive ? 'animate-pulse' : ''}`} />
+                    <span className="text-xs text-white font-medium">{faceDetected ? 'REC' : 'AWAY'}</span>
                 </div>
             </div>
 

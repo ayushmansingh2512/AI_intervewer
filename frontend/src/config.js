@@ -7,7 +7,12 @@ const getBaseUrl = () => {
 };
 
 const getWsUrl = () => {
-  return import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+  // Use explicit env var if provided
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  
+  // Otherwise derive from API_URL
+  const baseUrl = getBaseUrl();
+  return baseUrl.replace(/^http/, 'ws');
 };
 
 export const API_URL = getBaseUrl();

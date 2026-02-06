@@ -23,12 +23,31 @@ if os.getenv("GEMINI_API_KEY"):
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 # Initialize Face Detection
-# Use cv2.data.haarcascades to ensuring loading
-face_cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
-eye_cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_eye.xml')
+def load_cascades():
+    paths = [
+        # Standard location
+        os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml'),
+        # Fallback for some linux distros
+        "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+        "/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml",
+    ]
+    
+    face_cas = None
+    for p in paths:
+        if os.path.exists(p):
+            face_cas = cv2.CascadeClassifier(p)
+            if not face_cas.empty():
+                print(f"Loaded face cascade from: {p}")
+                break
+    
+    if face_cas is None or face_cas.empty():
+        print("WARNING: Could not load face cascade classifier!")
+        # Create a dummy one to avoid crashes, but detection will fail
+        face_cas = cv2.CascadeClassifier()
 
-face_cascade = cv2.CascadeClassifier(face_cascade_path)
-eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
+    return face_cas
+
+face_cascade = load_cascades()
 
 SUSPICIOUS_DURATION_THRESHOLD = 10
 EMAIL_COOLDOWN = 60
@@ -234,9 +253,11 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str, db: Sessio
     last_email_sent_time = 0
     last_frame = None
 
+    frame_count = 0
     try:
         while True:
             data = await websocket.receive_bytes()
+            frame_count += 1
             nparr = np.frombuffer(data, np.uint8)
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -246,8 +267,9 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str, db: Sessio
                 faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
                 current_time = time.time()
+                face_detected = len(faces) > 0
 
-                if len(faces) == 0:
+                if not face_detected:
                     # No face detected
                     if current_time - last_face_detection_time > SUSPICIOUS_DURATION_THRESHOLD:
                         if current_time - last_email_sent_time > EMAIL_COOLDOWN:
@@ -268,6 +290,14 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str, db: Sessio
                 else:
                     # Face detected
                     last_face_detection_time = current_time
+                
+                # Send status update back to client every 10 frames
+                if frame_count % 10 == 0:
+                    await websocket.send_json({
+                        "status": "active",
+                        "face_detected": face_detected,
+                        "timestamp": current_time
+                    })
                     # Optional: Eye detection logic could go here similar to user snippet
                     
     except WebSocketDisconnect:

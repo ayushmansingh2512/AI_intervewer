@@ -86,28 +86,45 @@ const Interview = () => {
 
           intervalId = setInterval(() => {
             if (videoRef.current && ws.readyState === WebSocket.OPEN) {
-              canvas.width = videoRef.current.videoWidth;
-              canvas.height = videoRef.current.videoHeight;
+              // Downscale to 640x480 for detection to save bandwidth/CPU
+              const targetWidth = 640;
+              const targetHeight = (videoRef.current.videoHeight / videoRef.current.videoWidth) * targetWidth;
+
+              canvas.width = targetWidth;
+              canvas.height = targetHeight;
 
               // Check if video has dimensions before drawing
               if (canvas.width > 0 && canvas.height > 0) {
-                ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(videoRef.current, 0, 0, targetWidth, targetHeight);
                 canvas.toBlob((blob) => {
                   if (blob && ws.readyState === WebSocket.OPEN) {
                     ws.send(blob);
                   }
-                });
+                }, 'image/jpeg', 0.8);
               }
             }
           }, 1000); // Send data every 1 second
         };
 
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.status === 'active') {
+              setEyeTrackingStatus(data.face_detected ? 'Eye-tracking is active.' : 'Warning: Face not detected!');
+            }
+          } catch (e) {
+            console.error("Error parsing WS message:", e);
+          }
+        };
+
         ws.onclose = () => {
           console.log('WebSocket connection closed.');
+          setEyeTrackingStatus('Detection connection lost.');
         };
 
         ws.onerror = (error) => {
           console.error('WebSocket error:', error);
+          setEyeTrackingStatus('Detection service error.');
         };
       } catch (error) {
         console.error('Error accessing webcam:', error);
