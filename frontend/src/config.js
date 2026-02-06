@@ -7,15 +7,17 @@ const getBaseUrl = () => {
 };
 
 const getWsUrl = () => {
-  // Use explicit env var if provided
-  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  const wsEnv = import.meta.env.VITE_WS_URL;
+  if (wsEnv) return wsEnv.replace(/\/$/, "");
   
-  // Otherwise derive from API_URL
-  const baseUrl = getBaseUrl();
-  return baseUrl.replace(/^http/, 'ws');
+  const baseUrl = getBaseUrl().replace(/\/$/, "");
+  if (baseUrl.startsWith("https://")) {
+    return baseUrl.replace("https://", "wss://");
+  }
+  return baseUrl.replace("http://", "ws://");
 };
 
-export const API_URL = getBaseUrl();
+export const API_URL = getBaseUrl().replace(/\/$/, "");
 export const WS_URL = getWsUrl();
 
 export const endpoints = {

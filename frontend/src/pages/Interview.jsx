@@ -117,9 +117,13 @@ const Interview = () => {
           }
         };
 
-        ws.onclose = () => {
-          console.log('WebSocket connection closed.');
-          setEyeTrackingStatus('Detection connection lost.');
+        ws.onclose = (event) => {
+          console.log('WebSocket connection closed.', event.code);
+          setEyeTrackingStatus('Detection connection lost. Reconnecting...');
+          setTimeout(() => {
+            // Re-trigger the interview effect manually or call the logic
+            window.location.reload(); // Simple but effective way to restart stateful WS
+          }, 3000);
         };
 
         ws.onerror = (error) => {

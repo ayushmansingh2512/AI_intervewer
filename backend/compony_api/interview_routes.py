@@ -256,50 +256,52 @@ async def websocket_endpoint(websocket: WebSocket, interview_id: str, db: Sessio
     frame_count = 0
     try:
         while True:
-            data = await websocket.receive_bytes()
-            frame_count += 1
-            nparr = np.frombuffer(data, np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            try:
+                data = await websocket.receive_bytes()
+                frame_count += 1
+                nparr = np.frombuffer(data, np.uint8)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-            if frame is not None:
-                last_frame = frame
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+                if frame is not None:
+                    last_frame = frame
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-                current_time = time.time()
-                face_detected = len(faces) > 0
+                    current_time = time.time()
+                    face_detected = len(faces) > 0
 
-                if not face_detected:
-                    # No face detected
-                    if current_time - last_face_detection_time > SUSPICIOUS_DURATION_THRESHOLD:
-                        if current_time - last_email_sent_time > EMAIL_COOLDOWN:
-                            screenshot_bytes = None
-                            if last_frame is not None:
-                                _, buffer = cv2.imencode('.jpg', last_frame)
-                                screenshot_bytes = buffer.tobytes()
-                            
-                            print(f"No face detected for {interview_id}. Sending alert.")
-                            await auth.send_suspicious_activity_email(
-                                company_email=company.email,
-                                candidate_email=interview.candidate_email,
-                                interview_id=interview_id,
-                                reason="No face detected for 10 seconds",
-                                screenshot_bytes=screenshot_bytes
-                            )
-                            last_email_sent_time = current_time
-                else:
-                    # Face detected
-                    last_face_detection_time = current_time
-                
-                # Send status update back to client every 10 frames
-                if frame_count % 10 == 0:
-                    await websocket.send_json({
-                        "status": "active",
-                        "face_detected": face_detected,
-                        "timestamp": current_time
-                    })
-                    # Optional: Eye detection logic could go here similar to user snippet
+                    if not face_detected:
+                        # No face detected
+                        if current_time - last_face_detection_time > SUSPICIOUS_DURATION_THRESHOLD:
+                            if current_time - last_email_sent_time > EMAIL_COOLDOWN:
+                                screenshot_bytes = None
+                                if last_frame is not None:
+                                    _, buffer = cv2.imencode('.jpg', last_frame)
+                                    screenshot_bytes = buffer.tobytes()
+                                
+                                print(f"No face detected for {interview_id}. Sending alert.")
+                                await auth.send_suspicious_activity_email(
+                                    company_email=company.email,
+                                    candidate_email=interview.candidate_email,
+                                    interview_id=interview_id,
+                                    reason="No face detected for 10 seconds",
+                                    screenshot_bytes=screenshot_bytes
+                                )
+                                last_email_sent_time = current_time
+                    else:
+                        # Face detected
+                        last_face_detection_time = current_time
                     
+                    # Send status update back to client every 10 frames
+                    if frame_count % 10 == 0:
+                        await websocket.send_json({
+                            "status": "active",
+                            "face_detected": face_detected,
+                            "timestamp": current_time
+                        })
+            except Exception as inner_e:
+                print(f"Error processing frame for {interview_id}: {inner_e}")
+                continue
     except WebSocketDisconnect:
         print(f"Client disconnected {interview_id}")
     except Exception as e:
