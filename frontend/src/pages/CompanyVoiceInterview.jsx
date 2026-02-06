@@ -120,21 +120,30 @@ const CompanyVoiceInterview = () => {
     useEffect(() => {
         let ws;
         let intervalId;
+        let reconnectTimeoutId;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        const startStreaming = () => {
-            // Use localhost for consistency
+        const connectWS = () => {
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.error('Max detection reconnection attempts reached.');
+                return;
+            }
+
+            console.log(`Connecting to detection WS (Attempt ${reconnectAttempts + 1})...`);
             ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
 
             ws.onopen = () => {
                 console.log('WebSocket connection established for detection.');
+                reconnectAttempts = 0;
 
+                if (intervalId) clearInterval(intervalId);
                 intervalId = setInterval(() => {
                     if (videoRef.current && ws.readyState === WebSocket.OPEN) {
                         const targetWidth = 640;
                         const targetHeight = (videoRef.current.videoHeight / videoRef.current.videoWidth) * targetWidth;
-
                         canvas.width = targetWidth;
                         canvas.height = targetHeight;
 
@@ -144,7 +153,7 @@ const CompanyVoiceInterview = () => {
                                 if (blob && ws.readyState === WebSocket.OPEN) {
                                     ws.send(blob);
                                 }
-                            }, 'image/jpeg', 0.8); // Send as JPEG
+                            }, 'image/jpeg', 0.8);
                         }
                     }
                 }, 1000); // 1 FPS
@@ -165,19 +174,25 @@ const CompanyVoiceInterview = () => {
                 console.error('WebSocket error:', error);
             };
 
-            ws.onclose = () => {
-                // simple reconnect logic could go here
-                console.log('WebSocket connection closed.');
-                setFaceDetected(false);
+            ws.onclose = (event) => {
+                console.log(`WebSocket closed (code: ${event.code}). Attempting reconnect...`);
+                if (intervalId) clearInterval(intervalId);
+                setFaceDetected(false); // Assume away when disconnected
+
+                if (!event.wasClean && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    reconnectAttempts++;
+                    reconnectTimeoutId = setTimeout(connectWS, 2000 * reconnectAttempts);
+                }
             };
         };
 
         if (cameraActive) {
-            startStreaming();
+            connectWS();
         }
 
         return () => {
             if (intervalId) clearInterval(intervalId);
+            if (reconnectTimeoutId) clearTimeout(reconnectTimeoutId);
             if (ws) ws.close();
         };
     }, [interviewId, cameraActive]);

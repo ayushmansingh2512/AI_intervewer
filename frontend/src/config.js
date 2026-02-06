@@ -10,7 +10,15 @@ const getWsUrl = () => {
   const wsEnv = import.meta.env.VITE_WS_URL;
   if (wsEnv) return wsEnv.replace(/\/$/, "");
   
-  const baseUrl = getBaseUrl().replace(/\/$/, "");
+  let baseUrl = getBaseUrl().replace(/\/$/, "");
+  
+  // If baseline is just a domain like "api.example.com"
+  if (!baseUrl.startsWith("http")) {
+    // Default to wss if we're on a secure page
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    return `${protocol}://${baseUrl}`;
+  }
+
   if (baseUrl.startsWith("https://")) {
     return baseUrl.replace("https://", "wss://");
   }

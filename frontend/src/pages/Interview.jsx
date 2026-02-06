@@ -52,18 +52,81 @@ const Interview = () => {
   useEffect(() => {
     let ws;
     let intervalId;
+    let reconnectTimeoutId;
     let currentStream = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+
+    const connectWS = () => {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('Max detection reconnection attempts reached.');
+        setEyeTrackingStatus('Detection service unavailable.');
+        return;
+      }
+
+      console.log(`Connecting to detection WS (Attempt ${reconnectAttempts + 1})...`);
+      ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
+
+      ws.onopen = () => {
+        console.log('WebSocket connection established.');
+        setEyeTrackingStatus('Eye-tracking is active.');
+        reconnectAttempts = 0;
+
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(() => {
+          if (videoRef.current && ws.readyState === WebSocket.OPEN) {
+            const targetWidth = 640;
+            const targetHeight = (videoRef.current.videoHeight / videoRef.current.videoWidth) * targetWidth;
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            if (canvas.width > 0 && canvas.height > 0) {
+              ctx.drawImage(videoRef.current, 0, 0, targetWidth, targetHeight);
+              canvas.toBlob((blob) => {
+                if (blob && ws.readyState === WebSocket.OPEN) {
+                  ws.send(blob);
+                }
+              }, 'image/jpeg', 0.8);
+            }
+          }
+        }, 1000);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.status === 'active') {
+            setEyeTrackingStatus(data.face_detected ? 'Eye-tracking is active.' : 'Warning: Face not detected!');
+          }
+        } catch (e) {
+          console.error("Error parsing WS message:", e);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log(`WebSocket closed (code: ${event.code}). Attempting reconnect...`);
+        if (intervalId) clearInterval(intervalId);
+
+        if (!event.wasClean && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          setEyeTrackingStatus('Connection lost. Reconnecting...');
+          reconnectAttempts++;
+          reconnectTimeoutId = setTimeout(connectWS, 3000);
+        } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          setEyeTrackingStatus('Detection connection lost.');
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    };
 
     const startEyeTracking = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            facingMode: "user"
-          }
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
         });
         currentStream = stream;
 
@@ -71,65 +134,13 @@ const Interview = () => {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
             videoRef.current.play()
-              .then(() => setEyeTrackingStatus('Eye-tracking is active.'))
+              .then(() => connectWS())
               .catch(e => {
                 console.error("Camera play failed:", e);
                 setEyeTrackingStatus('Camera blocked or busy.');
               });
           };
         }
-
-        ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
-
-        ws.onopen = () => {
-          console.log('WebSocket connection established.');
-
-          intervalId = setInterval(() => {
-            if (videoRef.current && ws.readyState === WebSocket.OPEN) {
-              // Downscale to 640x480 for detection to save bandwidth/CPU
-              const targetWidth = 640;
-              const targetHeight = (videoRef.current.videoHeight / videoRef.current.videoWidth) * targetWidth;
-
-              canvas.width = targetWidth;
-              canvas.height = targetHeight;
-
-              // Check if video has dimensions before drawing
-              if (canvas.width > 0 && canvas.height > 0) {
-                ctx.drawImage(videoRef.current, 0, 0, targetWidth, targetHeight);
-                canvas.toBlob((blob) => {
-                  if (blob && ws.readyState === WebSocket.OPEN) {
-                    ws.send(blob);
-                  }
-                }, 'image/jpeg', 0.8);
-              }
-            }
-          }, 1000); // Send data every 1 second
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.status === 'active') {
-              setEyeTrackingStatus(data.face_detected ? 'Eye-tracking is active.' : 'Warning: Face not detected!');
-            }
-          } catch (e) {
-            console.error("Error parsing WS message:", e);
-          }
-        };
-
-        ws.onclose = (event) => {
-          console.log('WebSocket connection closed.', event.code);
-          setEyeTrackingStatus('Detection connection lost. Reconnecting...');
-          setTimeout(() => {
-            // Re-trigger the interview effect manually or call the logic
-            window.location.reload(); // Simple but effective way to restart stateful WS
-          }, 3000);
-        };
-
-        ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          setEyeTrackingStatus('Detection service error.');
-        };
       } catch (error) {
         console.error('Error accessing webcam:', error);
         setEyeTrackingStatus('Could not access webcam. Please check permissions.');
@@ -141,15 +152,11 @@ const Interview = () => {
     }
 
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-      if (ws) {
-        ws.close();
-      }
+      if (intervalId) clearInterval(intervalId);
+      if (reconnectTimeoutId) clearTimeout(reconnectTimeoutId);
+      if (ws) ws.close();
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
-        console.log('Stopped video stream.');
       }
     };
   }, [interviewId, loading]);
