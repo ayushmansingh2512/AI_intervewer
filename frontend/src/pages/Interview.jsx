@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import { Loader } from 'lucide-react';
 import { API_URL, WS_URL } from '../config';
 
 const Interview = () => {
@@ -57,15 +58,26 @@ const Interview = () => {
 
     const startEyeTracking = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: "user"
+          }
+        });
         currentStream = stream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          // Explicitly play to avoid "white screen" if autoPlay fails
-          videoRef.current.play().catch(e => console.error("Error playing video:", e));
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play()
+              .then(() => setEyeTrackingStatus('Eye-tracking is active.'))
+              .catch(e => {
+                console.error("Camera play failed:", e);
+                setEyeTrackingStatus('Camera blocked or busy.');
+              });
+          };
         }
-        setEyeTrackingStatus('Eye-tracking is active.');
 
         ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
 
@@ -103,7 +115,7 @@ const Interview = () => {
       }
     };
 
-    if (interviewId) {
+    if (interviewId && !loading) {
       startEyeTracking();
     }
 
@@ -119,7 +131,7 @@ const Interview = () => {
         console.log('Stopped video stream.');
       }
     };
-  }, [interviewId]);
+  }, [interviewId, loading]);
 
   const handleNextQuestion = async () => {
     const newAnswers = [...answers, currentAnswer];
@@ -192,14 +204,21 @@ const Interview = () => {
       <div className="w-full max-w-3xl relative">
         {/* Camera Video - Fixed Top Right Corner */}
         <div className="fixed top-6 right-6 z-50">
-          <div className="bg-white rounded-lg shadow-lg border-2 border-[#E5E1DC] overflow-hidden">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-48 h-36 object-cover"
-            />
+          <div className="bg-white rounded-lg shadow-lg border-2 border-[#E5E1DC] overflow-hidden min-w-[192px]">
+            <div className="relative w-48 h-36 bg-[#1A1817] flex items-center justify-center">
+              {eyeTrackingStatus === 'Initializing...' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader className="w-6 h-6 text-[#D4A574] animate-spin" />
+                </div>
+              )}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover transform scale-x-[-1] transition-opacity duration-300 ${eyeTrackingStatus === 'Eye-tracking is active.' ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </div>
             <div className="px-3 py-1.5 bg-[#F7F5F2] border-t border-[#E5E1DC]">
               <p className="text-xs text-[#6B6662] font-light text-center">
                 {eyeTrackingStatus}

@@ -69,29 +69,51 @@ const CompanyVoiceInterview = () => {
     useEffect(() => {
         let currentStream = null;
         const startCamera = async () => {
+            if (loading) return;
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                console.log("Initializing camera...");
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "user"
+                    }
+                });
                 currentStream = stream;
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
-                    setCameraActive(true);
-                    // Explicitly play to avoid "white screen" if autoPlay fails
-                    videoRef.current.play().catch(e => console.error("Error playing video:", e));
+                    // Ensure the video plays once metadata is loaded
+                    videoRef.current.onloadedmetadata = () => {
+                        videoRef.current.play()
+                            .then(() => {
+                                console.log("Camera playing successfully");
+                                setCameraActive(true);
+                            })
+                            .catch(e => {
+                                console.error("Camera play failed:", e);
+                            });
+                    };
                 }
             } catch (err) {
                 console.error("Error accessing camera:", err);
-                toast.error("Camera access required for this interview.");
+                if (err.name === 'NotAllowedError') {
+                    toast.error("Camera permission denied. Please allow camera access.");
+                } else {
+                    toast.error("Could not access camera. Please check if another app is using it.");
+                }
             }
         };
+
         startCamera();
 
         return () => {
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
+                console.log("Camera stream stopped");
             }
         };
-    }, []);
+    }, [loading, interviewId]);
 
     // WebSocket Streaming for Detection
     useEffect(() => {
@@ -330,10 +352,22 @@ const CompanyVoiceInterview = () => {
         <div className="min-h-screen bg-gradient-to-br from-[#F7F5F2] to-[#E5E1DC] flex items-center justify-center p-6 relative">
 
             {/* Camera Feed - Fixed Top Right */}
-            <div className="fixed top-6 right-6 w-64 h-48 bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white z-50">
-                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
+            <div className="fixed top-6 right-6 w-64 h-48 bg-[#1A1817] rounded-xl overflow-hidden shadow-2xl border-2 border-white z-50 flex items-center justify-center">
+                {!cameraActive && (
+                    <div className="flex flex-col items-center gap-2">
+                        <Loader className="w-8 h-8 text-[#D4A574] animate-spin" />
+                        <span className="text-[10px] text-[#6B6662] font-light">Starting Camera...</span>
+                    </div>
+                )}
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`w-full h-full object-cover transform scale-x-[-1] transition-opacity duration-500 ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
+                />
                 <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <div className={`w-2 h-2 ${cameraActive ? 'bg-red-500' : 'bg-gray-500'} rounded-full ${cameraActive ? 'animate-pulse' : ''}`} />
                     <span className="text-xs text-white font-medium">REC</span>
                 </div>
             </div>
