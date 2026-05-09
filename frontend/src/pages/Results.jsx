@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { Download } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Results = () => {
   const location = useLocation();
@@ -17,7 +18,7 @@ const Results = () => {
   useEffect(() => {
     const evaluate = async () => {
       try {
-        const response = await axios.post('http://localhost:8000/evaluate-answers', { questions, answers });
+        const response = await axios.post(`${API_URL}/evaluate-answers`, { questions, answers });
         setEvaluation(response.data);
       } catch (error) {
         toast.error('Failed to evaluate answers. Please try again.');
@@ -111,10 +112,10 @@ const Results = () => {
       doc.text('Technical Interview Results', margin, yPosition);
       yPosition += 15;
 
-      addText(new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      addText(new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       }), 12, false, [107, 102, 98]);
       addSeparator();
 
@@ -229,13 +230,13 @@ const Results = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E1DC" />
                 <XAxis dataKey="name" tick={{ fill: '#6B6662', fontWeight: 300 }} />
                 <YAxis tick={{ fill: '#6B6662', fontWeight: 300 }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#FFFFFF', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#FFFFFF',
                     border: '1px solid #E5E1DC',
                     borderRadius: '8px',
                     fontWeight: 300
-                  }} 
+                  }}
                 />
                 <Bar dataKey="score" fill="#1A1817" radius={[4, 4, 0, 0]} />
               </BarChart>

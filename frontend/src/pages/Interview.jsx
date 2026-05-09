@@ -1,23 +1,217 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+import { Loader } from 'lucide-react';
+import { API_URL, WS_URL } from '../config';
 
 const Interview = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { questions, questionType } = location.state || { questions: [], questionType: '' };
+  const { interviewId } = useParams();
+  const { questions: locationQuestions, questionType } = location.state || { questions: [], questionType: '' };
+
+  const [questions, setQuestions] = useState(locationQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
+  const [eyeTrackingStatus, setEyeTrackingStatus] = useState('Initializing...');
+  const [loading, setLoading] = useState(true);
+  const [accessError, setAccessError] = useState(null);
+  const videoRef = useRef(null);
 
-  const handleNextQuestion = () => {
-    setAnswers([...answers, currentAnswer]);
+  useEffect(() => {
+    const fetchInterview = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/company/interview/${interviewId}`);
+
+        // Redirect to voice interview if type is 'voice'
+        if (response.data.interview_type === 'voice') {
+          navigate(`/interview/voice/${interviewId}`);
+          return;
+        }
+
+        setQuestions(response.data.questions);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch interview', error);
+        if (error.response && error.response.status === 403) {
+          // Scheduling error (not started or expired)
+          setAccessError(error.response.data.detail);
+        }
+        setLoading(false);
+      }
+    };
+
+    if (interviewId) {
+      fetchInterview();
+    } else {
+      setLoading(false);
+    }
+  }, [interviewId]);
+
+  useEffect(() => {
+    let ws;
+    let intervalId;
+    let reconnectTimeoutId;
+    let currentStream = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const connectWS = () => {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('Max detection reconnection attempts reached.');
+        setEyeTrackingStatus('Detection service unavailable.');
+        return;
+      }
+
+      console.log(`Connecting to detection WS (Attempt ${reconnectAttempts + 1})...`);
+      ws = new WebSocket(`${WS_URL}/company/interview/${interviewId}/stream`);
+
+      ws.onopen = () => {
+        console.log('WebSocket connection established.');
+        setEyeTrackingStatus('Eye-tracking is active.');
+        reconnectAttempts = 0;
+
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(() => {
+          if (videoRef.current && ws.readyState === WebSocket.OPEN) {
+            const targetWidth = 640;
+            const targetHeight = (videoRef.current.videoHeight / videoRef.current.videoWidth) * targetWidth;
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            if (canvas.width > 0 && canvas.height > 0) {
+              ctx.drawImage(videoRef.current, 0, 0, targetWidth, targetHeight);
+              canvas.toBlob((blob) => {
+                if (blob && ws.readyState === WebSocket.OPEN) {
+                  ws.send(blob);
+                }
+              }, 'image/jpeg', 0.8);
+            }
+          }
+        }, 1000);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.status === 'active') {
+            setEyeTrackingStatus(data.face_detected ? 'Eye-tracking is active.' : 'Warning: Face not detected!');
+          }
+        } catch (e) {
+          console.error("Error parsing WS message:", e);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log(`WebSocket closed (code: ${event.code}). Attempting reconnect...`);
+        if (intervalId) clearInterval(intervalId);
+
+        if (!event.wasClean && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          setEyeTrackingStatus('Connection lost. Reconnecting...');
+          reconnectAttempts++;
+          reconnectTimeoutId = setTimeout(connectWS, 3000);
+        } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          setEyeTrackingStatus('Detection connection lost.');
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    };
+
+    const startEyeTracking = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+        });
+        currentStream = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play()
+              .then(() => connectWS())
+              .catch(e => {
+                console.error("Camera play failed:", e);
+                setEyeTrackingStatus('Camera blocked or busy.');
+              });
+          };
+        }
+      } catch (error) {
+        console.error('Error accessing webcam:', error);
+        setEyeTrackingStatus('Could not access webcam. Please check permissions.');
+      }
+    };
+
+    if (interviewId && !loading) {
+      startEyeTracking();
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (reconnectTimeoutId) clearTimeout(reconnectTimeoutId);
+      if (ws) ws.close();
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [interviewId, loading]);
+
+  const handleNextQuestion = async () => {
+    const newAnswers = [...answers, currentAnswer];
+    setAnswers(newAnswers);
     setCurrentAnswer('');
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      navigate('/dashboard/results', { state: { questions, answers: [...answers, currentAnswer] } });
+      if (interviewId) {
+        try {
+          await axios.post(`${API_URL}/company/interview/${interviewId}/submit`, {
+            answers: newAnswers,
+          });
+          navigate(`/interview-completed`); // Redirect to a completion page
+        } catch (error) {
+          console.error('Failed to submit answers', error);
+          // Handle error appropriately
+        }
+      } else {
+        navigate('/dashboard/results', { state: { questions, answers: newAnswers } });
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-6">
+        <div className="text-center">
+          <p className="text-[#6B6662] font-light">Loading interview...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessError) {
+    return (
+      <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-lg p-8 shadow-sm border border-[#E5E1DC] text-center">
+          <div className="mb-6">
+            <svg className="w-16 h-16 mx-auto text-[#D4A574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-light text-[#1A1817] mb-4">Interview Not Accessible</h2>
+          <p className="text-[#6B6662] font-light mb-6">{accessError}</p>
+          <p className="text-sm text-[#9B9791] font-light">
+            Please check back at the scheduled time or contact the interviewer for more information.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (questions.length === 0) {
     return (
@@ -35,7 +229,31 @@ const Interview = () => {
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-6">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-3xl relative">
+        {/* Camera Video - Fixed Top Right Corner */}
+        <div className="fixed top-6 right-6 z-50">
+          <div className="bg-white rounded-lg shadow-lg border-2 border-[#E5E1DC] overflow-hidden min-w-[192px]">
+            <div className="relative w-48 h-36 bg-[#1A1817] flex items-center justify-center">
+              {eyeTrackingStatus === 'Initializing...' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader className="w-6 h-6 text-[#D4A574] animate-spin" />
+                </div>
+              )}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover transform scale-x-[-1] transition-opacity duration-300 ${eyeTrackingStatus === 'Eye-tracking is active.' ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </div>
+            <div className="px-3 py-1.5 bg-[#F7F5F2] border-t border-[#E5E1DC]">
+              <p className="text-xs text-[#6B6662] font-light text-center">
+                {eyeTrackingStatus}
+              </p>
+            </div>
+          </div>
+        </div>
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
@@ -47,7 +265,7 @@ const Interview = () => {
             </span>
           </div>
           <div className="w-full bg-[#E5E1DC] rounded-full h-1.5">
-            <div 
+            <div
               className="bg-[#D4A574] h-1.5 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
@@ -91,7 +309,7 @@ const Interview = () => {
               />
             )}
 
-            <button 
+            <button
               onClick={handleNextQuestion}
               disabled={!currentAnswer.trim()}
               className="w-full bg-[#1A1817] text-white py-4 rounded-lg font-light tracking-wide hover:bg-[#2D2B28] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"

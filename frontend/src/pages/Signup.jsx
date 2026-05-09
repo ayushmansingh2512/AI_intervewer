@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { API_URL } from '../config';
 import axios from "axios";
+import GoogleIcon from "../assets/images/icons8-google-50.png";
 import "./styles/Theme.css";
 
 function Signup() {
@@ -18,7 +20,7 @@ function Signup() {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/signup", {
+      const response = await axios.post(`${API_URL}/signup`, {
         email,
       });
 
@@ -87,9 +89,12 @@ function Signup() {
           <div className="flex-grow border-t border-black"></div>
         </div>
 
-        <button className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg flex items-center justify-center hover-ele transition">
+        <button
+          onClick={() => window.location.href = `${API_URL}/auth/google`}
+          className="w-full border bg-transparent text-clr font-bold py-2 rounded-lg flex items-center justify-center hover-ele transition"
+        >
           <img
-            src="src/assets/images/icons8-google-50.png"
+            src={GoogleIcon}
             alt="Google Logo"
             className="w-6 h-6 mr-2"
           />

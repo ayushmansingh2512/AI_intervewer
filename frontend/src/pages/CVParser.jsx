@@ -5,6 +5,7 @@ import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { Upload, FileText, CheckCircle, AlertCircle, TrendingUp, Code, Award, Download } from 'lucide-react';
 import { Treemap, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { API_URL } from '../config';
 
 const CVParser = () => {
   const [file, setFile] = useState(null);
@@ -27,12 +28,12 @@ const CVParser = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type === 'application/pdf' || 
-          droppedFile.type === 'application/msword' ||
-          droppedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      if (droppedFile.type === 'application/pdf' ||
+        droppedFile.type === 'application/msword' ||
+        droppedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         setFile(droppedFile);
       } else {
         toast.error('Please upload a PDF or Word document');
@@ -57,7 +58,7 @@ const CVParser = () => {
     formData.append('cv', file);
 
     try {
-      const response = await axios.post('http://localhost:8000/analyze-cv', formData, {
+      const response = await axios.post(`${API_URL}/analyze-cv`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -150,10 +151,10 @@ const CVParser = () => {
       doc.text('CV Analysis Report', margin, yPosition);
       yPosition += 15;
 
-      addText(new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      addText(new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       }), 12, false, [107, 102, 98]);
       addSeparator();
 
@@ -211,7 +212,7 @@ const CVParser = () => {
       if (yPosition > pageHeight - 40) {
         addNewPage();
       }
-      
+
       addText('Meeting Standards:', 11, true, [16, 185, 129]);
       analysis.industry_standards.meeting.forEach((item) => {
         if (yPosition > pageHeight - 30) {
@@ -262,7 +263,7 @@ const CVParser = () => {
     return (
       <div className="flex items-center gap-3">
         <div className="flex-1 bg-[#E5E1DC] rounded-full h-2">
-          <div 
+          <div
             className="h-2 rounded-full transition-all duration-500"
             style={{ width: `${percentage}%`, backgroundColor: color }}
           />
@@ -278,7 +279,7 @@ const CVParser = () => {
 
   const getLanguageChartData = () => {
     if (!analysis) return [];
-    
+
     const proficiencyMap = {
       'Beginner': 2.5,
       'Intermediate': 5,
@@ -327,10 +328,10 @@ const CVParser = () => {
     return (
       <g>
         <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" />
-        <text 
-          x={x + width / 2} 
-          y={y + height / 2} 
-          textAnchor="middle" 
+        <text
+          x={x + width / 2}
+          y={y + height / 2}
+          textAnchor="middle"
           dominantBaseline="middle"
           fill="#FFFFFF"
           fontSize={12}
@@ -369,11 +370,10 @@ const CVParser = () => {
         {/* Upload Section */}
         <div className="bg-white rounded-lg p-8 shadow-sm border border-[#E5E1DC] mb-8">
           <div
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition-all duration-200 ${
-              dragActive 
-                ? 'border-[#D4A574] bg-[#F7F5F2]' 
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition-all duration-200 ${dragActive
+                ? 'border-[#D4A574] bg-[#F7F5F2]'
                 : 'border-[#E5E1DC] hover:border-[#D4A574]'
-            }`}
+              }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
@@ -460,25 +460,25 @@ const CVParser = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={getRadarChartData()}>
                     <PolarGrid stroke="#E5E1DC" />
-                    <PolarAngleAxis 
-                      dataKey="category" 
+                    <PolarAngleAxis
+                      dataKey="category"
                       tick={{ fill: '#6B6662', fontWeight: 300, fontSize: 12 }}
                     />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, 10]} 
+                    <PolarRadiusAxis
+                      angle={90}
+                      domain={[0, 10]}
                       tick={{ fill: '#6B6662', fontWeight: 300 }}
                     />
-                    <Radar 
-                      name="Score" 
-                      dataKey="score" 
-                      stroke="#D4A574" 
-                      fill="#D4A574" 
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="#D4A574"
+                      fill="#D4A574"
                       fillOpacity={0.3}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#FFFFFF', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#FFFFFF',
                         border: '1px solid #E5E1DC',
                         borderRadius: '8px',
                         fontWeight: 300
@@ -527,7 +527,7 @@ const CVParser = () => {
                 <Code className="w-6 h-6 text-[#D4A574]" strokeWidth={1.5} />
                 <h2 className="text-2xl font-light text-[#1A1817]">Languages & Technologies</h2>
               </div>
-              
+
               {/* Treemap Chart */}
               <div className="mb-8" id="cv-lang-chart">
                 <ResponsiveContainer width="100%" height={300}>
@@ -538,9 +538,9 @@ const CVParser = () => {
                     fill="#D4A574"
                     content={<CustomTreemapContent />}
                   >
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#FFFFFF', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#FFFFFF',
                         border: '1px solid #E5E1DC',
                         borderRadius: '8px',
                         fontWeight: 300
@@ -558,12 +558,11 @@ const CVParser = () => {
                   <div key={index} className="border-b border-[#E5E1DC] pb-4 last:border-0">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[#1A1817] font-light">{lang.name}</span>
-                      <span className={`text-sm px-3 py-1 rounded-full ${
-                        lang.proficiency === 'Expert' ? 'bg-[#10B981]/10 text-[#10B981]' :
-                        lang.proficiency === 'Advanced' ? 'bg-[#3B82F6]/10 text-[#3B82F6]' :
-                        lang.proficiency === 'Intermediate' ? 'bg-[#F59E0B]/10 text-[#F59E0B]' :
-                        'bg-[#6B6662]/10 text-[#6B6662]'
-                      }`}>
+                      <span className={`text-sm px-3 py-1 rounded-full ${lang.proficiency === 'Expert' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                          lang.proficiency === 'Advanced' ? 'bg-[#3B82F6]/10 text-[#3B82F6]' :
+                            lang.proficiency === 'Intermediate' ? 'bg-[#F59E0B]/10 text-[#F59E0B]' :
+                              'bg-[#6B6662]/10 text-[#6B6662]'
+                        }`}>
                         {lang.proficiency}
                       </span>
                     </div>

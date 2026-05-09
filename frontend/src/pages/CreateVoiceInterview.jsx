@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config';
 import toast from 'react-hot-toast';
 
 const CreateVoiceInterview = () => {
@@ -24,7 +25,7 @@ const CreateVoiceInterview = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:8000/generate-voice-interview-questions', formData);
+      const response = await axios.post(`${API_URL}/generate-voice-interview-questions`, formData);
       if (response.data) {
         navigate('/dashboard/voice-interview/start', { state: { questions: response.data } });
       }
@@ -56,9 +57,9 @@ const CreateVoiceInterview = () => {
                 <label className="block text-sm font-light text-[#1A1817] mb-2 tracking-wide">
                   Role Level
                 </label>
-                <select 
-                  name="role" 
-                  value={formData.role} 
+                <select
+                  name="role"
+                  value={formData.role}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
                   style={{
@@ -128,9 +129,9 @@ const CreateVoiceInterview = () => {
                 <label className="block text-sm font-light text-[#1A1817] mb-2 tracking-wide">
                   Question Type
                 </label>
-                <select 
-                  name="questionType" 
-                  value={formData.questionType} 
+                <select
+                  name="questionType"
+                  value={formData.questionType}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-[#F7F5F2] border border-[#E5E1DC] rounded-lg text-[#1A1817] font-light focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:border-transparent transition-all duration-200 appearance-none cursor-pointer"
                   style={{
@@ -167,8 +168,8 @@ const CreateVoiceInterview = () => {
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full bg-[#1A1817] text-white py-4 rounded-lg font-light tracking-wide hover:bg-[#2D2B28] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >

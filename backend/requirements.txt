@@ -1,12 +1,41 @@
+# Core Framework
 fastapi
 uvicorn
+python-multipart
+python-dotenv
+opencv-python-headless
+google-generativeai
+resend
+pydub
+aiofiles
+httpx
+email-validator
+
+# Database
 sqlalchemy
 psycopg2-binary
-fastapi-mail<2.0.0
-python-jose
-python-dotenv
+alembic
+
+# Auth & Security
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
 google-auth
 google-auth-oauthlib
-alembic
-bcrypt
+
+# AI & Machine Learning
+google-generativeai
+numpy
+opencv-python
+
+
+# Email
+sib-api-v3-sdk
+
+# File Processing & Utils
+PyPDF2
+python-docx
 pydub
+SpeechRecognition
+google-cloud-texttospeech
+gtts

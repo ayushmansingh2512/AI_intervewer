@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Lottie from 'lottie-react';
-import ghostAnimation from '../assets/images/ghost.json';
+import ghostAnimation from "../assets/images/Ghost.json";
 
 // 1. Expanded array of funny quotes (now with more jokes!)
 const FUNNY_QUOTES = [
@@ -60,7 +60,7 @@ const FUNNY_QUOTES = [
 const Navbar = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [message, setMessage] = useState('');
-  
+
   const firstName = localStorage.getItem('first_name') || 'friend';
 
   const defaultGreeting = `Hello ${firstName}, I am parakh.ai ka chota assistant ,  I am here to help you crack interviews. Hope we work hard together! 🚀`;
@@ -75,11 +75,11 @@ const Navbar = () => {
   };
 
   const handleGhostClick = (e) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     // The random logic already handles the new, larger array
     const randomIndex = Math.floor(Math.random() * FUNNY_QUOTES.length);
     setMessage(FUNNY_QUOTES[randomIndex]);
-    setIsHovered(true); 
+    setIsHovered(true);
   };
 
   return (
@@ -89,7 +89,7 @@ const Navbar = () => {
           className="w-12 right-5 fixed h-6 focus:outline-none"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onClick={handleGhostClick} 
+          onClick={handleGhostClick}
         >
           <Lottie className='w-8' animationData={ghostAnimation} loop={true} />
         </button>

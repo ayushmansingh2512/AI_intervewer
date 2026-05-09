@@ -2,6 +2,45 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Loader, Volume2, Zap } from 'lucide-react';
+import { API_URL } from '../config';
+import { motion } from 'framer-motion';
+
+const ClockLoader = () => {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
+      <div className="relative w-24 h-24 mb-8">
+        {/* Clock Face */}
+        <div className="absolute inset-0 border-4 border-[#1A1817] rounded-full" />
+
+        {/* Center Dot */}
+        <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-[#1A1817] rounded-full -translate-x-1/2 -translate-y-1/2 z-10" />
+
+        {/* Hour Hand */}
+        <motion.div
+          className="absolute top-1/2 left-1/2 w-1 h-8 bg-[#1A1817] origin-bottom -translate-x-1/2 -translate-y-full rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+        />
+
+        {/* Minute Hand */}
+        <motion.div
+          className="absolute top-1/2 left-1/2 w-1 h-10 bg-[#D4A574] origin-bottom -translate-x-1/2 -translate-y-full rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
+
+      <motion.p
+        className="text-xl font-light text-[#1A1817] tracking-widest uppercase"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        Evaluating Response...
+      </motion.p>
+      <p className="text-sm text-[#6B6662] mt-2 font-light">Analyzing speech patterns and content</p>
+    </div>
+  );
+};
 
 const VoiceInterview = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -214,7 +253,7 @@ const VoiceInterview = () => {
       formData.append('current_question_index', currentQuestionIndex);
       formData.append('total_questions', initialQuestions.length);
 
-      const response = await axios.post('http://localhost:8000/process-voice-answer', formData, {
+      const response = await axios.post(`${API_URL}/process-voice-answer`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -259,6 +298,8 @@ const VoiceInterview = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F7F5F2] to-[#E5E1DC] flex items-center justify-center p-6">
+      {processingAnswer && <ClockLoader />}
+
       <div className="w-full max-w-4xl">
         {/* Progress Bar */}
         <div className="mb-12">

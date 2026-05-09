@@ -1,17 +1,12 @@
 
 from fastapi import HTTPException
 import google.generativeai as genai
-import os
 import json
 
 from backend import schemas
 
 async def generate_questions(request: schemas.InterviewRequest):
     """Generate interview questions for text-based interview"""
-    if not os.getenv("GEMINI_API_KEY"):
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     model = genai.GenerativeModel('gemini-2.5-flash')
 
     prompt = f"""

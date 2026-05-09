@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../auth/AuthContext';
+import { API_URL } from '../config';
 
 const GetStarted = () => {
   const [resume, setResume] = useState(null);
@@ -35,7 +36,7 @@ const GetStarted = () => {
     console.log('Auth Token:', authToken);
 
     try {
-      const response = await axios.put('http://localhost:8000/users/me/profile', formData, {
+      const response = await axios.put(`${API_URL}/users/me/profile`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${authToken}`,

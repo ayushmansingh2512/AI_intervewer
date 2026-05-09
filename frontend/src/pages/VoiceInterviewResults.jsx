@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import { Award, Lightbulb, MessageSquare, Download } from 'lucide-react';
+import { API_URL } from '../config';
 
 const VoiceInterviewResults = () => {
   const location = useLocation();
@@ -19,7 +20,7 @@ const VoiceInterviewResults = () => {
   useEffect(() => {
     const evaluateOverall = async () => {
       try {
-        const response = await axios.post('http://localhost:8000/evaluate-voice-interview', {
+        const response = await axios.post(`${API_URL}/evaluate-voice-interview`, {
           questions: questions,
           evaluations: evaluations,
         });
@@ -116,10 +117,10 @@ const VoiceInterviewResults = () => {
       doc.text('Voice Interview Results', margin, yPosition);
       yPosition += 15;
 
-      addText(new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      addText(new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       }), 12, false, [107, 102, 98]);
       addSeparator();
 
@@ -154,7 +155,7 @@ const VoiceInterviewResults = () => {
         addText(`Transcribed Answer: ${item.transcribed_text}`, 9, false, [107, 102, 98]);
         addText(`Feedback: ${item.feedback}`, 9, false, [107, 102, 98]);
         yPosition += 5;
-        
+
         const line1 = doc.splitTextToSize(`Q: ${questions[index]}`, contentWidth);
         const line2 = doc.splitTextToSize(`A: ${item.transcribed_text}`, contentWidth);
         yPosition += Math.max(line1.length, line2.length) * 2;
@@ -260,7 +261,7 @@ const VoiceInterviewResults = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E1DC" />
                 <XAxis dataKey="name" tick={{ fill: '#6B6662', fontWeight: 300 }} />
                 <YAxis domain={[0, 10]} tick={{ fill: '#6B6662', fontWeight: 300 }} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{
                     backgroundColor: '#FFFFFF',
                     border: '1px solid #E5E1DC',

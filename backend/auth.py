@@ -1,6 +1,5 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
@@ -14,6 +13,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend import crud, schemas
 from backend.database import get_db
+
+
 
 
 load_dotenv()
@@ -73,48 +74,106 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Email Configuration
-conf = ConnectionConfig(
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM = os.getenv("MAIL_FROM"),
-    MAIL_PORT = int(os.getenv("MAIL_PORT")),
-    MAIL_SERVER = os.getenv("MAIL_SERVER"),
-    MAIL_STARTTLS = os.getenv("MAIL_STARTTLS") == "True",
-    MAIL_SSL_TLS = os.getenv("MAIL_SSL_TLS") == "True",
-    USE_CREDENTIALS = True,
-    VALIDATE_CERTS = True
-)
+# Brevo Email Configuration
+import httpx
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_FROM_EMAIL = os.getenv("BREVO_FROM_EMAIL", "ayushmansingh2512@gmail.com")
+
+async def send_email_via_brevo(to_email: str, subject: str, html_content: str):
+    """Send email using Brevo (formerly Sendinblue) API"""
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json"
+    }
+    data = {
+        "sender": {"email": BREVO_FROM_EMAIL, "name": "Noodle Lab"},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_content
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=data)
+        if response.status_code not in [200, 201]:
+            print(f"Brevo error: {response.status_code} - {response.text}")
+            raise Exception(f"Brevo API error: {response.status_code}")
+        print(f"Email sent successfully to {to_email}")
 
 async def send_otp_email(email: str, otp: str):
-    message = MessageSchema(
-        subject="Your OTP for Solvithem",
-        recipients=[email],
-        body=f"Your OTP is: {otp}",
-        subtype="html"
+    current_year = datetime.now().year
+    
+    body = f"""
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background-color: #1A1817; padding: 25px; text-align: center;">
+           <h1 style="color: #D4A574; margin: 0; font-size: 24px; letter-spacing: 2px; font-weight: 300;">NOODLE LAB</h1>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px; color: #333333; text-align: center;">
+          <h2 style="color: #1A1817; margin-top: 0; font-weight: 400; font-size: 22px;">Verification Code</h2>
+          <p style="font-size: 15px; line-height: 1.6; color: #555555; margin-bottom: 30px;">
+            Please use the code below to verify your account or complete your login for Noodle Lab.
+          </p>
+          
+          <div style="background-color: #f0f0f0; border-radius: 8px; padding: 20px; display: inline-block; letter-spacing: 5px;">
+            <span style="font-size: 32px; font-weight: bold; color: #1A1817; font-family: monospace;">{otp}</span>
+          </div>
+
+          <p style="font-size: 14px; color: #888888; margin-top: 30px;">
+            This code will expire in 10 minutes.<br>If you didn't request this, you can safely ignore this email.
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 11px; color: #999999;">
+          &copy; {current_year} Noodle Lab.
+        </div>
+      </div>
+    </div>
+    """
+    
+    await send_email_via_brevo(
+        to_email=email,
+        subject="Your Verification Code - Noodle Lab",
+        html_content=body
     )
-    fm = FastMail(conf)
-    await fm.send_message(message)
 
 # Google OAuth2 Flow
-def get_google_auth_url():
-    flow = Flow.from_client_secrets_file(
-        'client_secret.json',
+def get_google_flow():
+    client_config = {
+        "web": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [GOOGLE_REDIRECT_URI],
+        }
+    }
+    return Flow.from_client_config(
+        client_config,
         scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
         redirect_uri=GOOGLE_REDIRECT_URI
     )
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true'
-    )
+
+def get_google_auth_url(state: str = None):
+    flow = get_google_flow()
+    kwargs = {
+        'access_type': 'offline',
+        'include_granted_scopes': 'true'
+    }
+    if state:
+        kwargs['state'] = state
+        
+    authorization_url, state = flow.authorization_url(**kwargs)
     return authorization_url
 
 def get_google_user_info(code: str):
-    flow = Flow.from_client_secrets_file(
-        'client_secret.json',
-        scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-        redirect_uri=GOOGLE_REDIRECT_URI
-    )
+    flow = get_google_flow()
     flow.fetch_token(code=code)
     credentials = flow.credentials
     
