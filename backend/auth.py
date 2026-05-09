@@ -13,11 +13,13 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend import crud, schemas
 from backend.database import get_db
+from urllib.parse import urlencode
 
 
 
 
 load_dotenv()
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -144,47 +146,54 @@ async def send_otp_email(email: str, otp: str):
     )
 
 # Google OAuth2 Flow
-def get_google_flow():
-    client_config = {
-        "web": {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [GOOGLE_REDIRECT_URI],
-        }
-    }
-    return Flow.from_client_config(
-        client_config,
-        scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-        redirect_uri=GOOGLE_REDIRECT_URI
-    )
-
 def get_google_auth_url(state: str = None):
-    flow = get_google_flow()
-    kwargs = {
-        'access_type': 'offline',
-        'include_granted_scopes': 'true'
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid",
+        "access_type": "offline",
+        "include_granted_scopes": "true",
+        "prompt": "select_account"
     }
     if state:
-        kwargs['state'] = state
+        params["state"] = state
         
-    authorization_url, state = flow.authorization_url(**kwargs)
-    return authorization_url
+    auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode(params)}"
+    return auth_url
 
 def get_google_user_info(code: str):
-    flow = get_google_flow()
-    flow.fetch_token(code=code)
-    credentials = flow.credentials
+    token_url = "https://oauth2.googleapis.com/token"
+    data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
     
-    user_info_res = requests.get(
-        'https://www.googleapis.com/oauth2/v1/userinfo',
-        headers={'Authorization': f'Bearer {credentials.token}'}
-    )
-    
-    if user_info_res.status_code == 200:
-        return user_info_res.json()
-    return None
+    try:
+        response = requests.post(token_url, data=data)
+        token_data = response.json()
+        
+        if "access_token" not in token_data:
+            print(f"Google Token Exchange Error: {token_data}")
+            return None
+            
+        access_token = token_data["access_token"]
+        user_info_res = requests.get(
+            'https://www.googleapis.com/oauth2/v1/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        
+        if user_info_res.status_code == 200:
+            return user_info_res.json()
+        else:
+            print(f"Google User Info Error: {user_info_res.status_code} - {user_info_res.text}")
+            return None
+    except Exception as e:
+        print(f"Error in Google OAuth process: {e}")
+        return None
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
